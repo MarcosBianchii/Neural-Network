@@ -4,9 +4,12 @@
 #include <math.h>
 #include "layer.h"
 
+typedef double (*act_func)(double); 
+
+
 double EPS = 10e-5;
 double LEARNING_RATE = 10e-1;
-size_t MAX_ITER = 10e+5;
+size_t MAX_ITER = 10e+4;
 
 double sigmoid(double x) {
     return 1 / (1 + exp(-x));
@@ -22,7 +25,8 @@ typedef struct NeuralNetwork {
 } NN;
 
 // arch: an array of [params, [hidden layers], outputs]
-NN nn_new(size_t arch[], size_t len) {
+NN nn_new(size_t arch[], act_func *f, size_t len) {
+    assert(len > 1);
     NN n = (NN) {
         .l = malloc(sizeof(*n.l) * (len-1)),
         .xs = arch[0],
@@ -32,7 +36,8 @@ NN nn_new(size_t arch[], size_t len) {
     assert(n.l != NULL);
     size_t input_size = arch[0];
     for (size_t i = 0; i < len-1; i++) {
-        n.l[i] = lay_new(arch[i+1], input_size, sigmoid);
+        act_func g = f ? f[i] : NULL;
+        n.l[i] = lay_new(arch[i+1], input_size, g);
         lay_assert(n.l[i]);
         input_size = arch[i+1];
     }
@@ -55,12 +60,14 @@ Mat forward(NN n, Mat x) {
 double cost(NN n, Mat x, Mat y) {
     double sum = 0;
     size_t data_len = x.n;
-    for (int i = 0; i < data_len; i++) {
-        Mat x_row = mat_row(x, i);
-        Mat y_row = mat_row(y, i);
-        double pred = forward(n, x_row).data[0];
-        double diff = y_row.data[0] - pred;
-        sum += diff * diff;
+    for (int k = 0; k < y.m; k++) {
+        for (int i = 0; i < data_len; i++) {
+            Mat x_row = mat_row(x, i);
+            Mat y_row = mat_row(y, i);
+            double pred = forward(n, x_row).data[k];
+            double diff = y_row.data[k] - pred;
+            sum += diff * diff;
+        }
     }
 
     return sum / data_len;
@@ -106,8 +113,8 @@ static void finite_diff(NN n, Mat x, Mat y) {
 // set: Mat{[x1, x2, ..., xn, y]}.
 // Returns the amount of iterations ran.
 size_t train(NN n, Mat set) {
-    Mat x = mat_upto_col(set, set.m-1);
-    Mat y = mat_col(set, set.m-1);
+    Mat x = mat_upto_col(set, n.xs);
+    Mat y = mat_from_col(set, n.xs);
 
     size_t iters = 0;
     double c = EPS;
@@ -119,8 +126,9 @@ size_t train(NN n, Mat set) {
 
 // Prints the matrices of the nn.
 void nn_print(NN n) {
+    puts("Neural Network:");
     for (size_t i = 0; i < n.len; i++)
-        lay_print(n.l[i]);
+        lay_print(n.l[i], i);
 }
 
 // Prints the results of the nn
@@ -135,11 +143,12 @@ void nn_see_results(NN n, Mat set) {
         Mat x_row = mat_row(x, i);
         Mat y_row = mat_row(y, i);
         Mat pred = forward(n, x_row);
-
-        mat_print_no_nl(y_row, "y");
-        putchar(' ');
-        mat_print_no_nl(pred, "p");
-        putchar('\n');
+        mat_print_no_nl(x_row, "x");
+        printf("   ");
+        mat_print_no_nl(y_row, "y'");
+        printf("   ");
+        mat_print_no_nl(pred, "y");
+        puts("   ");
     }
 }
 
@@ -147,6 +156,7 @@ void nn_see_results(NN n, Mat set) {
 void nn_del(NN n) {
     for (size_t i = 0; i < n.len; i++)
         lay_del(n.l[i]);
+    free(n.l);
 }
 
 #endif // __NN_H__

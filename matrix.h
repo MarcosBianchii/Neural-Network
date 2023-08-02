@@ -26,23 +26,25 @@ void mat_print_no_nl(Mat m, const char *str) {
     }
 }
 
-static void mat_print_with_str(Mat m, const char *str) {
-    printf("%s:\n", str);
+static void mat_print_with_str(Mat m, const char *str, int pad) {
+    printf("%*s%s:\n", pad, "", str);
     for (size_t i = 0; i < m.n; i++) {
-        printf("[  ");
-        for (size_t j = 0; j < m.m; j++)
-            printf("%.2lf  ", MAT_AT(m, i, j));
+        printf("%*s[  ", pad, "");
+        for (size_t j = 0; j < m.m; j++) {
+            double v = MAT_AT(m, i, j);
+            printf(v < 0 ? "%.2lf  " : "%.3lf  ", v);
+        }
         puts("]");
     }
     puts("");
 }
 
 // Formats and prints m.
-#define mat_print(m) mat_print_with_str(m, #m)
+#define mat_print(m) mat_print_with_str(m, #m, 0)
 
-// Generates a random value between [0,1].
+// Generates a random value between [-1,1].
 double randf() {
-    return (double)rand() / (double)RAND_MAX;
+    return (double)rand() / (double)RAND_MAX * 2 - 1;
 }
 
 // Fills a data array with random values.
@@ -121,6 +123,7 @@ Mat mat_dot(Mat dst, Mat a, Mat b) {
     assert(a.m == b.n);
     assert(dst.n == a.n);
     assert(dst.m == b.m);
+    mat_fill(dst, 0);
     size_t n = a.m;
     for (size_t i = 0; i < a.n; i++)
         for (size_t j = 0; j < b.m; j++)

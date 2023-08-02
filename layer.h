@@ -36,22 +36,23 @@ Layer lay_new(size_t len, size_t input_size, double (*act_func)(double)) {
 // Calculates the sum of the product of weights
 // applying the activation function.
 Mat lay_forward(Layer l, Mat x) {
-    mat_fill(l.a, 0);
     return mat_func(mat_sum(mat_dot(l.a, x, l.w), l.b), l.act_func);
 }
 
 // Prints the matrices of l.
-void lay_print(Layer l) {
-    Mat W = l.w;
-    Mat B = l.b;
-    mat_print(W);
-    mat_print(B);
+void lay_print(Layer l, size_t i) {
+    char buff[16];
+    snprintf(buff, sizeof(buff), "W%li", i);
+    mat_print_with_str(l.w, buff, 4);
+    snprintf(buff, sizeof(buff), "B%li", i);
+    mat_print_with_str(l.b, buff, 4);
 }
 
 // Frees the memory used by l.
 void lay_del(Layer l) {
     mat_del(l.w);
     mat_del(l.b);
+    mat_del(l.a);
 }
 
 #endif // __LAYER_H__
