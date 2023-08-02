@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 typedef struct Matrix {
     double *data;
@@ -17,26 +16,37 @@ typedef struct Matrix {
 #define MAT_AT(mat, i, j) (mat).data[(i)*(mat).stride+(j)]
 
 void mat_print_no_nl(Mat m, const char *str) {
-    printf("%s: ", str);
+    printf("\033[0;37m%s: ", str);
+    char buff[16];
     for (size_t i = 0; i < m.n; i++) {
-        printf("[  ");
-        for (size_t j = 0; j < m.m; j++)
-            printf("%.2lf  ", MAT_AT(m, i, j));
-        printf("]");
+        printf("\033[0;30m[\033[0;37m  ");
+        for (size_t j = 0; j < m.m; j++) {
+            double v = MAT_AT(m, i, j);
+            snprintf(buff, 6, "%.3lf", v);
+            printf(v < 0 ? "%.2lf  " : "%.3lf  ", v);
+        }
+        printf("\033[0;30m]");
     }
+    printf("\033[0;37m");
+}
+
+static double absf(double x) {
+    return x < 0 ? -x : x;
 }
 
 static void mat_print_with_str(Mat m, const char *str, int pad) {
-    printf("%*s%s:\n", pad, "", str);
+    printf("\033[0;37m%*s%s:\n", pad, "", str);
+    char buff[16];
     for (size_t i = 0; i < m.n; i++) {
-        printf("%*s[  ", pad, "");
+        printf("\033[0;30m%*s[  ", pad, "");
         for (size_t j = 0; j < m.m; j++) {
             double v = MAT_AT(m, i, j);
-            printf(v < 0 ? "%.2lf  " : "%.3lf  ", v);
+            snprintf(buff, 6, "%.3lf", absf(v));
+            printf(v < 0 ? "\033[0;31m%s  " : "\033[0;32m%s  ", buff);
         }
-        puts("]");
+        puts("\033[0;30m]");
     }
-    puts("");
+    puts("\033[0;37m");
 }
 
 // Formats and prints m.

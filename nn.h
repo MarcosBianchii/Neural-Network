@@ -5,8 +5,14 @@
 #include "layer.h"
 
 typedef double (*act_func)(double); 
+typedef struct NeuralNetwork {
+    size_t xs, len;
+    Layer *l;
+} NN;
 
-
+size_t ARCH[] = {4, 5, 10, 3};
+act_func ARCH_FUNCS[] = {tanh, tanh, sigmoid};
+size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
 double EPS = 10e-5;
 double LEARNING_RATE = 10e-1;
 size_t MAX_ITER = 10e+4;
@@ -18,11 +24,6 @@ double sigmoid(double x) {
 double relu(double x) {
     return x > 0 ? x : 0;
 }
-
-typedef struct NeuralNetwork {
-    size_t xs, len;
-    Layer *l;
-} NN;
 
 // arch: an array of [params, [hidden layers], outputs]
 NN nn_new(size_t arch[], act_func *f, size_t len) {
@@ -51,20 +52,20 @@ static Mat forward_rec(Layer *l, Mat x, size_t n, size_t i) {
 }
 
 // Tries to predict y given x.
-Mat forward(NN n, Mat x) {
+Mat nn_forward(NN n, Mat x) {
     return forward_rec(n.l, x, n.len, 0);
 }
 
 // Calculates the cost for the current state
 // of the neural network given two sets of data.
-double cost(NN n, Mat x, Mat y) {
+double nn_cost(NN n, Mat x, Mat y) {
     double sum = 0;
     size_t data_len = x.n;
     for (int k = 0; k < y.m; k++) {
         for (int i = 0; i < data_len; i++) {
             Mat x_row = mat_row(x, i);
             Mat y_row = mat_row(y, i);
-            double pred = forward(n, x_row).data[k];
+            double pred = nn_forward(n, x_row).data[k];
             double diff = y_row.data[k] - pred;
             sum += diff * diff;
         }
@@ -86,12 +87,12 @@ static void learn(Layer l, Mat gw, Mat gb) {
 
 static Mat diff_in_matrix(NN n, Mat m, Mat x, Mat y) {
     Mat g = mat_new(m.n, m.m);
-    double c = cost(n, x, y);
+    double c = nn_cost(n, x, y);
     for (size_t i = 0; i < m.n; i++)
         for (size_t j = 0; j < m.m; j++) {
             double prev_value = MAT_AT(m, i, j);
             MAT_AT(m, i, j) += EPS;
-            MAT_AT(g, i, j) = (cost(n, x, y) - c) / EPS;
+            MAT_AT(g, i, j) = (nn_cost(n, x, y) - c) / EPS;
             MAT_AT(m, i, j) = prev_value;
         }
     return g;
@@ -112,14 +113,14 @@ static void finite_diff(NN n, Mat x, Mat y) {
 // Trains the network with the given set.
 // set: Mat{[x1, x2, ..., xn, y]}.
 // Returns the amount of iterations ran.
-size_t train(NN n, Mat set) {
+size_t nn_fit(NN n, Mat set) {
     Mat x = mat_upto_col(set, n.xs);
     Mat y = mat_from_col(set, n.xs);
 
     size_t iters = 0;
     double c = EPS;
-    do finite_diff(n, x, y);
-    while ((c = cost(n, x, y)) > EPS && ++iters != MAX_ITER);
+    do {finite_diff(n, x, y); printf("%li: cost = %lf\n", iters, c); }
+    while ((c = nn_cost(n, x, y)) > EPS && ++iters != MAX_ITER);
 
     return iters;
 }
@@ -138,11 +139,11 @@ void nn_see_results(NN n, Mat set) {
     nn_print(n);
     Mat x = mat_upto_col(set, n.xs);
     Mat y = mat_from_col(set, n.xs);
-    printf("cost: %lf\n", cost(n, x, y));
+    printf("cost:\033[0;33m %lf\n", nn_cost(n, x, y));
     for (size_t i = 0; i < x.n; i++) {
         Mat x_row = mat_row(x, i);
         Mat y_row = mat_row(y, i);
-        Mat pred = forward(n, x_row);
+        Mat pred = nn_forward(n, x_row);
         mat_print_no_nl(x_row, "x");
         printf("   ");
         mat_print_no_nl(y_row, "y'");
