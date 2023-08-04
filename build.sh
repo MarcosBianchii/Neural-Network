@@ -1,3 +1,3 @@
 # !/bin/bash
 
-gcc main.c -o main -lm && ./main
+gcc main.c -g -o main -lm -g && ./main

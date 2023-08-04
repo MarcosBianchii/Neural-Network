@@ -7,12 +7,11 @@
 #include <stdlib.h>
 
 typedef struct Matrix {
-    double *data;
-    double *free_ptr;
+    double *data, *free_ptr;
     size_t n, m, stride;
 } Mat;
 
-// Gives an entry point to a specific entry in the matrix. 
+// Gives an entry point to specific data in the matrix.
 #define MAT_AT(mat, i, j) (mat).data[(i)*(mat).stride+(j)]
 
 void mat_print_no_nl(Mat m, const char *str) {
@@ -30,10 +29,7 @@ void mat_print_no_nl(Mat m, const char *str) {
     printf("\033[0;37m");
 }
 
-static double absf(double x) {
-    return x < 0 ? -x : x;
-}
-
+double absf(double v);
 static void mat_print_with_str(Mat m, const char *str, int pad) {
     printf("\033[0;37m%*s%s:\n", pad, "", str);
     char buff[16];
@@ -52,24 +48,6 @@ static void mat_print_with_str(Mat m, const char *str, int pad) {
 // Formats and prints m.
 #define mat_print(m) mat_print_with_str(m, #m, 0)
 
-// Generates a random value between [-1,1].
-double randf() {
-    return (double)rand() / (double)RAND_MAX * 2 - 1;
-}
-
-// Fills a data array with random values.
-void fill_rand_data(double data[], size_t n) {
-    for (size_t i = 0; i < n; i++)
-        data[i] = randf();
-}
-
-// Fills a matrix with v.
-void mat_fill(Mat m, double v) {
-    size_t prod = m.n * m.m;
-    for (size_t i = 0; i < prod; i++)
-        m.data[i] = v;
-}
-
 // Asserts m is a valid matrix.
 void mat_assert(Mat m) {
     assert(m.data != NULL);
@@ -87,6 +65,24 @@ Mat mat_new(size_t n, size_t m) {
 
     mat_assert(r);
     return r;
+}
+
+// Generates a random value between [-1,1].
+double randf() {
+    return (double)rand() / (double)RAND_MAX * 2 - 1;
+}
+
+// Fills a data array with random values.
+void fill_rand_data(double data[], size_t n) {
+    for (size_t i = 0; i < n; i++)
+        data[i] = randf();
+}
+
+// Fills a matrix with v.
+void mat_fill(Mat m, double v) {
+    size_t prod = m.n * m.m;
+    for (size_t i = 0; i < prod; i++)
+        m.data[i] = v;
 }
 
 // Returns a matrix full of random entries.
@@ -197,6 +193,23 @@ Mat mat_func(Mat m, double (*f)(double x)) {
     for (size_t i = 0; i < n; i++)
         m.data[i] = f(m.data[i]);
     return m;
+}
+
+// Saves m to a file.
+void mat_save(Mat m, FILE *f) {
+    fwrite(&m.n, sizeof(size_t), 1, f);
+    fwrite(&m.m, sizeof(size_t), 1, f);
+    fwrite(m.data, sizeof(double), m.n*m.m, f);
+}
+
+// Loads a matrix from a file.
+Mat mat_from_file(FILE *f) {
+    size_t n, m;
+    fread(&n, sizeof(size_t), 1, f);
+    fread(&m, sizeof(size_t), 1, f);
+    Mat r = mat_new(n, m);
+    fread(r.data, sizeof(double), n*m, f);
+    return r;
 }
 
 // Frees the memory used by m.
