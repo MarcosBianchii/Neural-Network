@@ -20,6 +20,7 @@ size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
 double EPS = 10e-5;
 double LEARNING_RATE = 10e-1;
 size_t MAX_ITER = 10e+4;
+double MIN_ERROR = 10e-5;
 
 typedef struct NeuralNetwork {
     size_t xs, len;
@@ -150,7 +151,7 @@ size_t nn_fit(NN n, Set set) {
     do {
         finite_diff(n, x, y);
         printf("%li: cost = %lf\n", iters, c);
-    } while ((c = nn_cost(n, x, y)) > EPS && ++iters != MAX_ITER);
+    } while ((c = nn_cost(n, x, y)) > MIN_ERROR && ++iters != MAX_ITER);
 
     return iters;
 }
