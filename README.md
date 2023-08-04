@@ -15,6 +15,8 @@ The user of the framework only needs to specify the architecture of the neural n
 #include "nn.h"
 
 int main() {
+    // Set seed for generating the random weights and biases.
+    srand(time(NULL));
     // Define the architecture of the neural network in nn.h.
     // ARCH:       [input layer, neurons per layer, ..., output layer]
     // ARCH_FUNCS: [activation function per layer (not counting input layer)]

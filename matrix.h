@@ -92,15 +92,6 @@ Mat mat_rand_new(size_t n, size_t m) {
     return r;
 }
 
-// Returns a matrix from a C style matrix.
-Mat mat_from(size_t n, size_t m, double x[n][m]) {
-    Mat r = mat_new(n, m);
-    for (size_t i = 0; i < n; i++)
-        for (size_t j = 0; j < m; j++)
-            MAT_AT(r, i, j) = x[i][j];
-    return r;
-}
-
 // Performs the sum between matrices a and b.
 // The result is then stored in a and returned.
 Mat mat_sum(Mat a, Mat b) {
@@ -109,17 +100,6 @@ Mat mat_sum(Mat a, Mat b) {
     size_t prod = a.n * a.m;
     for (size_t i = 0; i < prod; i++)
         a.data[i] += b.data[i];
-    return a;
-}
-
-// Performs the subtraction between matrices a and b.
-// The result is then stored in a and returned.
-Mat mat_sub(Mat a, Mat b) {
-    assert(a.n == b.n);
-    assert(a.m == b.m);
-    size_t prod = a.n * a.m;
-    for (size_t i = 0; i < prod; i++)
-        a.data[i] -= b.data[i];
     return a;
 }
 
@@ -162,30 +142,6 @@ Mat mat_col(Mat m, size_t j) {
     };
 }
 
-// Returns a sub-matrix of m of the first j columns.
-// The returned Mat doesn't need to be free'd using mat_del().
-Mat mat_upto_col(Mat m, size_t j) {
-    return (Mat) {
-        .data = m.data,
-        .free_ptr = NULL,
-        .n = m.n,
-        .m = j,
-        .stride = m.m,
-    };
-}
-
-// Returns a sub-matrix of m from the j'th column to the end.
-// The returned Mat doesn't need to be free'd using mat_del().
-Mat mat_from_col(Mat m, size_t j) {
-    return (Mat) {
-        .data = &m.data[j],
-        .free_ptr = NULL,
-        .n = m.n,
-        .m = m.m - j,
-        .stride = m.m,
-    };
-}
-
 // Applies f to every entry in m.
 Mat mat_func(Mat m, double (*f)(double x)) {
     if (!f) return m;
@@ -203,7 +159,7 @@ void mat_save(Mat m, FILE *f) {
 }
 
 // Loads a matrix from a file.
-Mat mat_from_file(FILE *f) {
+Mat mat_from(FILE *f) {
     size_t n, m;
     fread(&n, sizeof(size_t), 1, f);
     fread(&m, sizeof(size_t), 1, f);

@@ -68,12 +68,13 @@ void lay_save(Layer l, FILE *f) {
     mat_save(l.b, f);
 }
 
-Layer lay_from_file(FILE *f) {
+// Creates a layer from a file.
+Layer lay_from(FILE *f) {
     ACT_FUNC act = -1;
     fread(&act, sizeof(act), 1, f);
     Layer l = (Layer) {
-        .w = mat_from_file(f),
-        .b = mat_from_file(f),
+        .w = mat_from(f),
+        .b = mat_from(f),
         .a = mat_new(1, l.b.m),
         .act_func = act,
         .act = act == -1 ? NULL : funcs[act],

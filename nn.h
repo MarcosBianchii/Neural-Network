@@ -74,6 +74,7 @@ NN nn_new(size_t arch[], ACT_FUNC *f, size_t len) {
     return n;
 }
 
+// Forwards the input values through the network.
 static Mat forward_rec(Layer *l, Mat x, size_t n, size_t i) {
     if (i == n) return x;
     return forward_rec(l, lay_forward(l[i], x), n, i+1);
@@ -103,17 +104,20 @@ double nn_cost(NN n, Set x, Set y) {
     return sum / data_len;
 }
 
+// Substracts g from m and stores it in m.
 static void diff_between_matrices(Mat m, Mat g) {
     for (size_t i = 0; i < m.n; i++)
         for (size_t j = 0; j < m.m; j++)
             MAT_AT(m, i, j) -= MAT_AT(g, i, j) * LEARNING_RATE;
 }
 
+// Applies the changes to the layer given.
 static void learn(Layer l, Mat gw, Mat gb) {
     diff_between_matrices(l.w, gw);
     diff_between_matrices(l.b, gb);
 }
 
+// Aproximates the derivative of the cost function.
 static Mat diff_in_matrix(NN n, Mat m, Set x, Set y) {
     Mat g = mat_new(m.n, m.m);
     double c = nn_cost(n, x, y);
@@ -127,6 +131,8 @@ static Mat diff_in_matrix(NN n, Mat m, Set x, Set y) {
     return g;
 }
 
+// Aproximates the gradient of the cost function for
+// every parameter using the finite difference method.
 static void finite_diff(NN n, Set x, Set y) {
     for (size_t k = 0; k < n.len; k++) {
         Mat w = lay_weights(n.l[k]);
@@ -140,7 +146,6 @@ static void finite_diff(NN n, Set x, Set y) {
 }
 
 // Trains the network with the given set.
-// set: Mat{[x1, x2, ..., xn, y]}.
 // Returns the amount of iterations ran.
 size_t nn_fit(NN n, Set set) {
     Set x = set_get_x(set, n.xs);
@@ -198,6 +203,7 @@ void nn_save(NN n, const char *path) {
     fclose(f);
 }
 
+// Returns an empty nn with the given amount of layers.
 NN nn_new_with(size_t xs, size_t len) {
     NN n = (NN) {
         .xs = xs,
@@ -220,7 +226,7 @@ NN nn_from(const char *path) {
 
     NN n = nn_new_with(xs, len);
     for (size_t i = 0; i < n.len; i++)
-        n.l[i] = lay_from_file(f);
+        n.l[i] = lay_from(f);
     
     fclose(f);
     return n;
