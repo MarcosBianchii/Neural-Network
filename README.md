@@ -1,4 +1,6 @@
-# Neural Network Framework
+# nn.h (WIP)
+
+###### needs updating...
 
 This framework is an implementation of a neural network made in C. It can accomodate any number of layers and neurons. It is also possible to use different activation functions per layer. The framework is designed to be as easy to use as possible.
 
