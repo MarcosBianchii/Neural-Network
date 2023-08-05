@@ -5,44 +5,81 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#include "colors.h"
 
 typedef struct Matrix {
     double *data, *free_ptr;
-    size_t n, m, stride;
+    size_t n, m, step, stride;
 } Mat;
 
 // Gives an entry point to specific data in the matrix.
-#define MAT_AT(mat, i, j) (mat).data[(i)*(mat).stride+(j)]
+#define MAT_AT(mat, i, j) (mat).data[(i)*(mat).stride+(j)*(mat).step]
 
-void mat_print_no_nl(Mat m, const char *str) {
-    printf("\033[0;37m%s: ", str);
-    char buff[16];
-    for (size_t i = 0; i < m.n; i++) {
-        printf("\033[0;30m[\033[0;37m  ");
-        for (size_t j = 0; j < m.m; j++) {
-            double v = MAT_AT(m, i, j);
-            snprintf(buff, 6, "%.3lf", v);
-            printf(v < 0 ? "%.2lf  " : "%.3lf  ", v);
-        }
-        printf("\033[0;30m]");
-    }
-    printf("\033[0;37m");
+// Returns a sub-matrix with the i'th row of entries.
+// The returned Mat doesn't need to be free'd using mat_del().
+Mat mat_row(Mat m, size_t i) {
+    return (Mat) {
+        .data = &MAT_AT(m, i, 0),
+        .free_ptr = NULL,
+        .n = 1,
+        .m = m.m,
+        .step = m.step,
+        .stride = 0,
+    };
+}
+
+// Retures a sub-matrix with the j'th col of entries.
+// The returned Mat doesn't need to be free'd using mat_del().
+Mat mat_col(Mat m, size_t j) {
+    return (Mat) {
+        .data = &MAT_AT(m, 0, j),
+        .free_ptr = NULL,
+        .n = m.n,
+        .m = 1,
+        .step = 0,
+        .stride = m.stride,
+    };
 }
 
 double absf(double v);
-static void mat_print_with_str(Mat m, const char *str, int pad) {
-    printf("\033[0;37m%*s%s:\n", pad, "", str);
+void mat_print_no_nl(Mat m, const char *str) {
+    printf(WHITE"%s", str);
     char buff[16];
     for (size_t i = 0; i < m.n; i++) {
-        printf("\033[0;30m%*s[  ", pad, "");
+        printf(BLACK"[  ");
         for (size_t j = 0; j < m.m; j++) {
             double v = MAT_AT(m, i, j);
             snprintf(buff, 6, "%.3lf", absf(v));
-            printf(v < 0 ? "\033[0;31m%s  " : "\033[0;32m%s  ", buff);
+            printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
         }
-        puts("\033[0;30m]");
+        printf(BLACK"]");
     }
-    puts("\033[0;37m");
+    printf(WHITE);
+}
+
+void mat_print_from_layer(Mat m, size_t i) {
+    if (m.n <= i) {
+        printf("%*s", (int)m.m*7+4, "");
+        return;
+    }
+
+    Mat row = mat_row(m, i);
+    mat_print_no_nl(row, "");
+}
+
+static void mat_print_with_str(Mat m, const char *str, int pad) {
+    printf(WHITE"%*s%s:\n", pad, "", str);
+    char buff[16];
+    for (size_t i = 0; i < m.n; i++) {
+        printf(BLACK"%*s[  ", pad, "");
+        for (size_t j = 0; j < m.m; j++) {
+            double v = MAT_AT(m, i, j);
+            snprintf(buff, 6, "%.3lf", absf(v));
+            printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
+        }
+        puts(BLACK"]");
+    }
+    puts(WHITE);
 }
 
 // Formats and prints m.
@@ -56,11 +93,12 @@ void mat_assert(Mat m) {
 // Returns an empty matrix.
 Mat mat_new(size_t n, size_t m) {
     Mat r = {
-        .n = n,
-        .m = m,
-        .stride = m,
         .data = calloc(n*m, sizeof(double)),
         .free_ptr = r.data,
+        .n = n,
+        .m = m,
+        .step = 1,
+        .stride = m,
     };
 
     mat_assert(r);
@@ -79,10 +117,11 @@ void fill_rand_data(double data[], size_t n) {
 }
 
 // Fills a matrix with v.
-void mat_fill(Mat m, double v) {
-    size_t prod = m.n * m.m;
-    for (size_t i = 0; i < prod; i++)
-        m.data[i] = v;
+Mat mat_fill(Mat m, double v) {
+    for (size_t i = 0; i < m.n; i++)
+        for (size_t j = 0; j < m.m; j++)
+            MAT_AT(m, i, j) = v;
+    return m;
 }
 
 // Returns a matrix full of random entries.
@@ -97,9 +136,28 @@ Mat mat_rand_new(size_t n, size_t m) {
 Mat mat_sum(Mat a, Mat b) {
     assert(a.n == b.n);
     assert(a.m == b.m);
-    size_t prod = a.n * a.m;
-    for (size_t i = 0; i < prod; i++)
-        a.data[i] += b.data[i];
+    for (size_t i = 0; i < a.n; i++)
+        for (size_t j = 0; j < a.m; j++)
+            MAT_AT(a, i, j) += MAT_AT(b, i, j);
+    return a;
+}
+
+// Performs the product between matrix a and scalar v.
+Mat mat_scalar(Mat a, double v) {
+    for (size_t i = 0; i < a.n; i++)
+        for (size_t j = 0; j < a.m; j++)
+            MAT_AT(a, i, j) *= v;
+    return a;
+}
+
+// Performs the substraction between matrices a and b.
+// The result is then stored in a and returned.
+Mat mat_sub(Mat a, Mat b) {
+    assert(a.n == b.n);
+    assert(a.m == b.m);
+    for (size_t i = 0; i < a.n; i++)
+        for (size_t j = 0; j < a.m; j++)
+            MAT_AT(a, i, j) -= MAT_AT(b, i, j);
     return a;
 }
 
@@ -118,37 +176,38 @@ Mat mat_dot(Mat dst, Mat a, Mat b) {
     return dst;
 }
 
-// Returns a sub-matrix with the i'th row of entries.
-// The returned Mat doesn't need to be free'd using mat_del().
-Mat mat_row(Mat m, size_t i) {
+// Performs the Hadamard product between a and b.
+// The result is then stored in a and returned.
+Mat mat_mul(Mat a, Mat b) {
+    assert(a.n == b.n);
+    assert(b.n == b.m);
+    for (size_t i = 0; i < a.n; i++)
+        for (size_t j = 0; j < a.m; j++)
+            MAT_AT(a, i, j) *= MAT_AT(b, i, j);
+    return a;
+}
+
+// Returns a transposed matrix and returns it.
+Mat mat_t(Mat x) {
     return (Mat) {
-        .data = &m.data[i*m.stride],
+        .data = &MAT_AT(x, 0, 0),
         .free_ptr = NULL,
-        .n = 1,
-        .m = m.m,
-        .stride = m.stride,
+        .n = x.m,
+        .m = x.n,
+        .step = x.stride,
+        .stride = x.step,
     };
 }
 
-// Retures a sub-matrix with the j'th col of entries.
-// The returned Mat doesn't need to be free'd using mat_del().
-Mat mat_col(Mat m, size_t j) {
-    return (Mat) {
-        .data = &m.data[j],
-        .free_ptr = NULL,
-        .n = m.n,
-        .m = 1,
-        .stride = m.m,
-    };
-}
-
-// Applies f to every entry in m.
-Mat mat_func(Mat m, double (*f)(double x)) {
-    if (!f) return m;
-    size_t n = m.n * m.m;
-    for (size_t i = 0; i < n; i++)
-        m.data[i] = f(m.data[i]);
-    return m;
+// Applies f to m and stores it's result in n returning it.
+Mat mat_func(Mat n, Mat m, double (*f)(double x)) {
+    if (!f) return n;
+    assert(m.n == n.n);
+    assert(m.m == n.m);
+    for (size_t i = 0; i < n.n; i++)
+        for (size_t j = 0; j < n.m; j++)
+            MAT_AT(n, i, j) = f(MAT_AT(m, i, j));
+    return n;
 }
 
 // Saves m to a file.

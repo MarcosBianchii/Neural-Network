@@ -6,12 +6,13 @@
 
 double relu(double x);
 double sigmoid(double x);
+double lineal(double x);
 
-double (*funcs[3])(double) = {relu, tanh, sigmoid};
-typedef enum ACT_FUNC { RELU, TANH, SIGMOID } ACT_FUNC;
+double (*funcs[4])(double) = {relu, tanh, sigmoid, lineal};
+typedef enum ACT_FUNC { RELU, TANH, SIGMOID, LINEAL } ACT_FUNC;
 
 typedef struct Layer {
-    Mat w, b, a;
+    Mat w, b, a, z;
     ACT_FUNC act_func;
     double (*act)(double);
 } Layer;
@@ -19,19 +20,21 @@ typedef struct Layer {
 // Asserts that every matrix
 // in l is valid.
 void lay_assert(Layer l) {
-    mat_assert(l.a);
     mat_assert(l.w);
     mat_assert(l.b);
+    mat_assert(l.z);
+    mat_assert(l.a);
 }
 
 // Creates a new Layer for the nn.
 Layer lay_new(size_t len, size_t input_size, ACT_FUNC act_func) {
     Layer l = (Layer) {
-        .a = mat_new(1, len),
-        .w = mat_rand_new(input_size, len),
-        .b = mat_rand_new(1, len),
+        .w = mat_rand_new(len, input_size),
+        .b = mat_rand_new(len, 1),
+        .z = mat_new(len, 1),
+        .a = mat_new(len, 1),
         .act_func = act_func,
-        .act = act_func == -1 ? NULL : funcs[act_func],
+        .act = funcs[act_func],
     };
 
     lay_assert(l);
@@ -41,7 +44,8 @@ Layer lay_new(size_t len, size_t input_size, ACT_FUNC act_func) {
 // Calculates the sum of the product of weights
 // applying the activation function.
 Mat lay_forward(Layer l, Mat x) {
-    return mat_func(mat_sum(mat_dot(l.a, x, l.w), l.b), l.act);
+    mat_sum(mat_dot(l.z, l.w, x), l.b);
+    return mat_func(l.a, l.z, l.act);
 }
 
 Mat lay_weights(Layer l) {
@@ -54,11 +58,38 @@ Mat lay_biases(Layer l) {
 
 // Prints the matrices of l.
 void lay_print(Layer l, size_t i) {
-    char buff[16];
-    snprintf(buff, sizeof(buff), "W%li", i);
-    mat_print_with_str(l.w, buff, 4);
-    snprintf(buff, sizeof(buff), "B%li", i);
-    mat_print_with_str(l.b, buff, 4);
+    int pad = 4;
+    char wbuff[8];
+    char bbuff[8];
+    char abuff[8];
+    snprintf(wbuff, sizeof(wbuff), "W%li", i);
+    snprintf(bbuff, sizeof(bbuff), "B%li", i);
+    snprintf(abuff, sizeof(abuff), i == 0 ? "X" : "A%li", i);
+
+    printf("%*s%s:%*s", pad, "", wbuff, (int)l.w.m*7+2, "");
+    printf("%s:%*s", abuff, 7 - (i == 0 ? 0 : 1) , "");
+    printf("%s:\n", bbuff);
+
+    for (size_t j = 0; j < l.w.m; j++) {
+        printf("%*s", pad, "");
+        mat_print_from_layer(l.w, j);
+        printf(BLACK" ["WHITE"  %s%li  "BLACK"] "WHITE, i == 0 ? "x" : "a", j);
+        mat_print_from_layer(l.b, j);
+        puts("");
+    }
+
+    puts("");
+}
+
+Layer lay_new_zero(Layer l) {
+    return (Layer) {
+        .w = mat_new(l.w.n, l.w.m),
+        .b = mat_new(l.b.n, l.b.m),
+        .z = mat_new(l.z.n, l.z.m),
+        .a = mat_new(l.a.n, l.a.m),
+        .act_func = l.act_func,
+        .act = l.act,
+    };
 }
 
 // Saves the layer to a file.
@@ -75,6 +106,7 @@ Layer lay_from(FILE *f) {
     Layer l = (Layer) {
         .w = mat_from(f),
         .b = mat_from(f),
+        .z = mat_new(1, l.b.m),
         .a = mat_new(1, l.b.m),
         .act_func = act,
         .act = act == -1 ? NULL : funcs[act],
@@ -87,6 +119,7 @@ Layer lay_from(FILE *f) {
 void lay_del(Layer l) {
     mat_del(l.w);
     mat_del(l.b);
+    mat_del(l.z);
     mat_del(l.a);
 }
 
