@@ -9,7 +9,7 @@ double sigmoid(double x);
 double lineal(double x);
 
 typedef double (*act_func_t)(double);
-act_func_t funcs[4] = { relu, tanh, sigmoid, lineal };
+act_func_t funcs[] = { relu, tanh, sigmoid, lineal };
 enum ACT_FUNC { RELU, TANH, SIGMOID, LINEAL };
 
 typedef struct Layer {

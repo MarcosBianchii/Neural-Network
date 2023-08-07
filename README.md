@@ -1,11 +1,18 @@
 # nn.h (WIP)
 
-This framework is an implementation of a neural network made in C. It can accomodate any number of layers and neurons. It is also possible to use different activation functions per layer. The framework is designed to be as easy to use as possible. It trains the network using gradient descent and backpropagation.
+This framework is an implementation of a neural network made in C.
+
+* It can accomodate any number of layers and neurons.
+* The framework is designed to be as easy to use as possible.
+* It trains the network using gradient descent and backpropagation.
 
 ## Usage
 ```bash
-$ ./build.sh # Compile and run
-$ ./main     # Run
+# Compile and run
+$ ./build.sh
+
+# Run
+$ ./main 
 ```
 The user of the framework only needs to specify the architecture of the neural network and the activation functions for each layer. The framework will take care of managing the matrix operations and training the neural network.
 
@@ -65,7 +72,7 @@ The neural network can be configured in `nn.h` by changing the following variabl
 // Neural network architecture.
 size_t ARCH[] = {4, 5, 5, 3};
 // Activation functions per layer (always 1 less than architecture).
-ACT_FUNC ARCH_FUNCS[] = {RELU, TANH, SIGMOID};
+ACT_FUNC ARCH_FUNCS[] = {TANH, TANH, SIGMOID};
 // Length of ARCH array.
 size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
 ```
