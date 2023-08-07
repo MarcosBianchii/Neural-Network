@@ -1,16 +1,13 @@
 # nn.h (WIP)
 
-###### needs updating...
-
-This framework is an implementation of a neural network made in C. It can accomodate any number of layers and neurons. It is also possible to use different activation functions per layer. The framework is designed to be as easy to use as possible.
+This framework is an implementation of a neural network made in C. It can accomodate any number of layers and neurons. It is also possible to use different activation functions per layer. The framework is designed to be as easy to use as possible. It trains the network using gradient descent and backpropagation.
 
 ## Usage
-
 ```bash
 $ ./build.sh # Compile and run
 $ ./main     # Run
 ```
-The user of the framework only needs to specify the architecture of the neural network and the activation functions for each layer. The framework will take care of managing the matrix operations and training of the neural network.
+The user of the framework only needs to specify the architecture of the neural network and the activation functions for each layer. The framework will take care of managing the matrix operations and training the neural network.
 
 ## Example
 ```C
@@ -49,15 +46,15 @@ int main() {
 ## Activation Functions
 The following activation functions are available:
 
-* NULL: Lineal function.
-* RELU: Rectified Linear Unit.
-* TANH: Hyperbolic tangent.
+* RELU:    Rectified Linear Unit.
+* TANH:    Hyperbolic tangent.
 * SIGMOID: Sigmoid function.
+* LINEAL:  Lineal function.
 
 ```C
 // When defining the architecture make sure to use
 // this enum type and not the function pointers.
-typedef enum ACT_FUNC { RELU, TANH, SIGMOID } ACT_FUNC;
+enum ACT_FUNC { RELU, TANH, SIGMOID, LINEAL };
 ```
 
 
@@ -68,18 +65,14 @@ The neural network can be configured in `nn.h` by changing the following variabl
 // Neural network architecture.
 size_t ARCH[] = {4, 5, 5, 3};
 // Activation functions per layer (always 1 less than architecture).
-// If ARCH_FUNCS is NULL, every layer will be lineal.
-// For a specific layer to be lineal set ARCH_FUNCS[i] = NULL.
 ACT_FUNC ARCH_FUNCS[] = {RELU, TANH, SIGMOID};
 // Length of ARCH array.
 size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
 ```
 Hyperparameters can be changed in `nn.h`:
 ```C
-// Epsilon for the finite difference method.
-double EPS = 10e-5;
 // Coefficient for the regularization term.
-double LEARNING_RATE = 10e-1;
+double LEARNING_RATE = 10e-2;
 // Cap for the number of iterations.
 size_t MAX_ITER = 10e+4;
 // Minimum error for the neural network to stop training.

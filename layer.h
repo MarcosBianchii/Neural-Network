@@ -8,13 +8,13 @@ double relu(double x);
 double sigmoid(double x);
 double lineal(double x);
 
-typedef double (*activation_function)(double);
-double (*funcs[4])(double) = { relu, tanh, sigmoid, lineal };
-typedef enum ACT_FUNC { RELU, TANH, SIGMOID, LINEAL } ACT_FUNC;
+typedef double (*act_func_t)(double);
+act_func_t funcs[4] = { relu, tanh, sigmoid, lineal };
+enum ACT_FUNC { RELU, TANH, SIGMOID, LINEAL };
 
 typedef struct Layer {
     Mat w, b, a, z;
-    ACT_FUNC act_func;
+    enum ACT_FUNC act_func;
     double (*act)(double);
 } Layer;
 
@@ -28,7 +28,7 @@ void lay_assert(Layer l) {
 }
 
 // Creates a new Layer for the nn.
-Layer lay_new(size_t len, size_t input_size, ACT_FUNC act_func) {
+Layer lay_new(size_t len, size_t input_size, enum ACT_FUNC act_func) {
     Layer l = (Layer) {
         .w = mat_rand_new(len, input_size),
         .b = mat_rand_new(len, 1),
@@ -92,6 +92,13 @@ Layer lay_new_zero(Layer l) {
     };
 }
 
+void lay_fill_zeros(Layer l) {
+    mat_fill(l.w, 0);
+    mat_fill(l.b, 0);
+    mat_fill(l.z, 0);
+    mat_fill(l.a, 0);
+}
+
 // Saves the layer to a file.
 void lay_save(Layer l, FILE *f) {
     fwrite(&l.act_func, sizeof(l.act_func), 1, f);
@@ -101,7 +108,7 @@ void lay_save(Layer l, FILE *f) {
 
 // Creates a layer from a file.
 Layer lay_from(FILE *f) {
-    ACT_FUNC act;
+    enum ACT_FUNC act;
     fread(&act, sizeof(act), 1, f);
     Layer l = (Layer) {
         .w = mat_from(f),

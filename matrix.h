@@ -15,6 +15,11 @@ typedef struct Matrix {
 // Gives an entry point to specific data in the matrix.
 #define MAT_AT(mat, i, j) ((mat).data[(i)*(mat).stride+(j)*(mat).step])
 
+// Asserts m is a valid matrix.
+void mat_assert(Mat m) {
+    assert(m.data != NULL);
+}
+
 // Returns a sub-matrix with the i'th row of entries.
 // The returned Mat doesn't need to be free'd using mat_del().
 Mat mat_row(Mat m, size_t i) {
@@ -42,6 +47,21 @@ Mat mat_col(Mat m, size_t j) {
 }
 
 double absf(double v);
+static void mat_print_with_str(Mat m, const char *str, int pad) {
+    printf(WHITE"%*s%s", pad, "", str);
+    char buff[16];
+    for (size_t i = 0; i < m.n; i++) {
+        printf(BLACK"%*s[  ", pad, "");
+        for (size_t j = 0; j < m.m; j++) {
+            double v = MAT_AT(m, i, j);
+            snprintf(buff, 6, "%.3lf", absf(v));
+            printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
+        }
+        puts(BLACK"]");
+    }
+    puts(WHITE);
+}
+
 void mat_print_no_nl(Mat m, const char *str) {
     printf(WHITE"%s", str);
     char buff[16];
@@ -57,6 +77,9 @@ void mat_print_no_nl(Mat m, const char *str) {
     printf(WHITE);
 }
 
+// Formats and prints m.
+#define mat_print(m) mat_print_with_str(m, #m":\n", 0)
+
 void mat_print_from_layer(Mat m, size_t i) {
     if (m.n <= i) {
         printf("%*s", (int)m.m*7+4, "");
@@ -65,29 +88,6 @@ void mat_print_from_layer(Mat m, size_t i) {
 
     Mat row = mat_row(m, i);
     mat_print_no_nl(row, "");
-}
-
-static void mat_print_with_str(Mat m, const char *str, int pad) {
-    printf(WHITE"%*s%s:\n", pad, "", str);
-    char buff[16];
-    for (size_t i = 0; i < m.n; i++) {
-        printf(BLACK"%*s[  ", pad, "");
-        for (size_t j = 0; j < m.m; j++) {
-            double v = MAT_AT(m, i, j);
-            snprintf(buff, 6, "%.3lf", absf(v));
-            printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
-        }
-        puts(BLACK"]");
-    }
-    puts(WHITE);
-}
-
-// Formats and prints m.
-#define mat_print(m) mat_print_with_str(m, #m, 0)
-
-// Asserts m is a valid matrix.
-void mat_assert(Mat m) {
-    assert(m.data != NULL);
 }
 
 // Returns an empty matrix.
@@ -185,6 +185,8 @@ Mat mat_dot(Mat dst, Mat a, Mat b) {
     return dst;
 }
 
+// Performs the product between matrices a and b.
+// The result is summed to dst and returned.
 Mat mat_dot_sum(Mat dst, Mat a, Mat b) {
     assert(a.m == b.n);
     assert(dst.n == a.n);

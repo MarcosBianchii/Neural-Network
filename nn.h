@@ -7,11 +7,10 @@
 
 // Architecture of the neural network.
 size_t ARCH[] = { 4, 5, 5, 3 };
-ACT_FUNC ARCH_FUNCS[] = { TANH, TANH, SIGMOID };
+enum ACT_FUNC ARCH_FUNCS[] = { TANH, TANH, SIGMOID };
 size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
 
 // Hyperparameters.
-double EPS = 10e-2;
 double LEARNING_RATE = 10e-2;
 size_t MAX_ITER = 10e+4;
 double MIN_ERROR = 10e-5;
@@ -81,8 +80,9 @@ Mat set_to_mat(Set s) {
 }
 
 // arch: an array of [params, [hidden layers], outputs]
-NN nn_new(size_t arch[], ACT_FUNC *f, size_t len) {
+NN nn_new(size_t arch[], enum ACT_FUNC *f, size_t len) {
     assert(len > 1);
+    assert(f != NULL);
     NN n = (NN) {
         .l = malloc(sizeof(*n.l) * (len-1)),
         .xs = arch[0],
@@ -92,8 +92,7 @@ NN nn_new(size_t arch[], ACT_FUNC *f, size_t len) {
     assert(n.l != NULL);
     size_t input_size = arch[0];
     for (size_t i = 0; i < len-1; i++) {
-        ACT_FUNC g = f ? f[i] : LINEAL;
-        n.l[i] = lay_new(arch[i+1], input_size, g);
+        n.l[i] = lay_new(arch[i+1], input_size, f[i]);
         lay_assert(n.l[i]);
         input_size = arch[i+1];
     }
@@ -136,7 +135,7 @@ double nn_cost(NN n, Mat x, Mat y) {
 }
 
 // Returns a new neural network filled with zeros.
-NN nn_new_zero(NN n) {
+static NN nn_new_zero(NN n) {
     NN g = (NN) {
         .l = malloc(sizeof(*g.l) * n.len),
         .xs = n.xs,
@@ -150,20 +149,13 @@ NN nn_new_zero(NN n) {
     return g;
 }
 
-// Frees the memory used by the nn.
-void nn_del(NN n) {
-    for (size_t i = 0; i < n.len; i++)
-        lay_del(n.l[i]);
-    free(n.l);
-}
-
 // Applies the changes to the layer given.
 static void learn(Layer l, Mat gw, Mat gb) {
     mat_sub(l.w, mat_scalar(gw, LEARNING_RATE));
     mat_sub(l.b, mat_scalar(gb, LEARNING_RATE));
 }
 
-static activation_function fn_der(ACT_FUNC f) {
+static act_func_t fn_der(enum ACT_FUNC f) {
     switch (f) {
         case RELU:    return relu_der;
         case TANH:    return tanh_der;
@@ -173,9 +165,22 @@ static activation_function fn_der(ACT_FUNC f) {
     }
 }
 
+// Frees the memory used by the nn.
+void nn_del(NN n) {
+    for (size_t i = 0; i < n.len; i++)
+        lay_del(n.l[i]);
+    free(n.l);
+}
+
+// Fills the matrices with zeros.
+static void nn_fill_zeros(NN n) {
+    for (size_t l = 0; l < n.len; l++)
+        lay_fill_zeros(n.l[l]);
+}
+
 // Backpropagation algorithm for neural network learning.
-void backprop(NN n, Mat x, Mat y) {
-    NN g = nn_new_zero(n);
+void backpropagate(NN n, NN g, Mat x, Mat y) {
+    nn_fill_zeros(g);
     size_t len = x.m;
     for (size_t s = 0; s < len; s++) {
         Mat inp = mat_col(x, s);
@@ -188,7 +193,7 @@ void backprop(NN n, Mat x, Mat y) {
             Layer grad = g.l[l];
             Mat post_delta = mat_mul(diff, mat_func(grad.a, curr.z, fn_der(curr.act_func)));
             Mat prev_a = l > 0 ? n.l[l-1].a : inp;
-            Mat prev_z = g.l[l-1].z;
+            Mat prev_z = l > 0 ? g.l[l-1].z : inp;
 
             Mat dJdW = mat_dot_sum(grad.w, post_delta, mat_t(prev_a));
             Mat dJdB = post_delta;
@@ -200,8 +205,6 @@ void backprop(NN n, Mat x, Mat y) {
 
     for (size_t l = 0; l < n.len; l++)
         learn(n.l[l], g.l[l].w, g.l[l].b);
-
-    nn_del(g);
 }
 
 // Trains the network with the given set.
@@ -214,12 +217,14 @@ size_t nn_fit(NN n, Set set) {
 
     size_t iters = 0;
     double c = MIN_ERROR;
+    NN g = nn_new_zero(n);
 
     do {
-        backprop(n, x, y);
+        backpropagate(n, g, x, y);
         printf("%li: cost = %lf\n", iters, c);
     } while ((c = nn_cost(n, x, y)) > MIN_ERROR && ++iters < MAX_ITER);
 
+    nn_del(g);
     return iters;
 }
 
@@ -260,7 +265,7 @@ void nn_save(NN n, const char *path) {
 }
 
 // Returns an empty nn with the given amount of layers.
-NN nn_new_with(size_t xs, size_t len) {
+static NN nn_new_with(size_t xs, size_t len) {
     NN n = (NN) {
         .xs = xs,
         .len = len,
