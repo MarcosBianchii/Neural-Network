@@ -6,12 +6,14 @@
 #include "set.h"
 
 // Architecture of the neural network.
-size_t ARCH[] = { 4, 5, 3 };
-ACT_FUNC ARCH_FUNCS[] = { TANH, SIGMOID };
+size_t ARCH[] = { 4, 5, 5, 3 };
+ACT_FUNC ARCH_FUNCS[] = { TANH, TANH, SIGMOID };
 size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
-double EPS = 10e-5;
-double LEARNING_RATE = 10e-1;
-size_t MAX_ITER = 10;
+
+// Hyperparameters.
+double EPS = 10e-2;
+double LEARNING_RATE = 10e-2;
+size_t MAX_ITER = 10e+4;
 double MIN_ERROR = 10e-5;
 
 typedef struct NeuralNetwork {
@@ -53,7 +55,7 @@ double absf(double x) {
     return x < 0 ? -x : x;
 }
 
-#define NN_OUTPUT(n, i) (MAT_AT((n).l[(n).len-1].a, 0, i))
+#define NN_OUTPUT(n, i) (MAT_AT((n).l[(n).len-1].a, i, 0))
 
 // Converts the matrix into a Set.
 Set mat_to_set(Mat m) {
@@ -120,113 +122,17 @@ Mat nn_forward(NN n, Mat x) {
 // Calculates the cost for the current state
 // of the neural network given two sets of data.
 double nn_cost(NN n, Mat x, Mat y) {
-    double sum = 0;
-    size_t data_len = x.m;
-    for (int k = 0; k < y.n; k++) {
-        for (int i = 0; i < data_len; i++) {
-            Mat x_col = mat_col(x, i);
-            Mat y_col = mat_col(y, i);
-            double pred = MAT_AT(nn_forward(n, x_col), 0, k);
-            double diff = MAT_AT(y_col, 0, k) - pred;
-            sum += diff * diff;
-        }
+    size_t len = x.m;
+    Mat errors = mat_new(len, 1);
+    for (size_t i = 0; i < len; i++) {
+        Mat pred = nn_forward(n, mat_col(x, i));
+        Mat diff = mat_sub(pred, mat_col(y, i));
+        MAT_AT(errors, i, 0) = mat_add(mat_mul(diff, diff));
     }
 
-    return sum / data_len;
-}
-
-// Applies the changes to the layer given.
-static void learn(Layer l, Mat gw, Mat gb) {
-    mat_sub(l.w, mat_scalar(gw, LEARNING_RATE));
-    mat_sub(l.b, mat_scalar(gb, LEARNING_RATE));
-}
-
-// Aproximates the derivative of the cost function.
-static Mat diff_in_matrix(NN n, Mat m, Mat x, Mat y) {
-    Mat g = mat_new(m.n, m.m);
-    double c = nn_cost(n, x, y);
-
-    for (size_t i = 0; i < m.n; i++)
-        for (size_t j = 0; j < m.m; j++) {
-            double prev_value = MAT_AT(m, i, j);
-            MAT_AT(m, i, j) += EPS;
-            MAT_AT(g, i, j) = (nn_cost(n, x, y) - c) / EPS;
-            MAT_AT(m, i, j) = prev_value;
-        }
-    
-    return g;
-}
-
-// Aproximates the gradient of the cost function for
-// every parameter using the finite difference method.
-static void finite_diff(NN n, Mat x, Mat y) {
-    for (size_t k = 0; k < n.len; k++) {
-        Mat w = lay_weights(n.l[k]);
-        Mat b = lay_biases(n.l[k]);
-        Mat gw = diff_in_matrix(n, w, x, y);
-        Mat gb = diff_in_matrix(n, b, x, y);
-        learn(n.l[k], gw, gb);
-        mat_del(gw);
-        mat_del(gb);
-    }
-}
-
-static double fn_der(ACT_FUNC f, double x) {
-    switch (f) {
-        case SIGMOID: return sigmoid_der(x);
-        case RELU: return relu_der(x);
-        case TANH: return tanh_der(x);
-        case LINEAL: return lineal_der(x);
-        default: 1;
-    }
-}
-
-// Backpropagation algorithm for neural network learning.
-void backprop(NN n, NN g, Set x, Set y) {
-    // size_t len = x.n;
-    // for (size_t s = 0; s < len; s++) {
-    //     Set inp = set_row(x, s);
-    //     Set out = nn_forward(n, inp);
-    //     Set rvs = set_row(y, s);
-
-    //     for (size_t i = 0; i < y.m; i++)
-    //         NN_OUTPUT(g, i) = SET_AT(out, 0, i) - SET_AT(rvs, 0, i);
-
-    //     for (int l = n.len-1; l >= 0; l--) {
-    //         Layer curr_lay  = n.l[l];
-    //         Layer curr_grad = g.l[l];
-    //         Layer prev_lay  = l > 0 ? n.l[l-1] : (Layer) {
-    //             .a = set_to_mat(inp),
-    //         };
-
-    //         Layer prev_grad = l > 0 ? g.l[l-1] : (Layer) {
-    //             .a = mat_fill(mat_new(1, curr_lay.w.m), 1),
-    //         };
-
-    //         for (size_t j = 0; j < curr_lay.w.n; j++) {
-    //             double curr_act = MAT_AT(curr_lay.a,  0, j);
-    //             double diff_act = MAT_AT(curr_grad.a, 0, j);
-    //             double b = MAT_AT(curr_lay.b, 0, j);
-    //             double z = MAT_AT(curr_lay.z, 0, j);
-    //             MAT_AT(curr_grad.b, 0, j) += 2 * diff_act * fn_der(curr_lay.act_func, z);
-
-    //             for (size_t k = 0; k < prev_lay.w.n; k++) {
-    //                 double prev_act = MAT_AT(prev_lay.a, 0, j);
-    //                 double w = MAT_AT(curr_lay.w, j, k);
-    //                 MAT_AT(curr_grad.w, j, k) += 2 * diff_act * fn_der(curr_lay.act_func, z) * prev_act;
-    //                 MAT_AT(prev_grad.a, 0, j) += 2 * diff_act * fn_der(curr_lay.act_func, z) * w;
-    //             }
-    //         }
-
-    //         if (l == 0) { mat_del(prev_grad.a); }
-    //     }
-    // }
-
-    // for (size_t l = 0; l < n.len; l++) {
-    //     mat_scalar(g.l[l].w, 1.0 / len);
-    //     mat_scalar(g.l[l].b, 1.0 / len);
-    //     learn(n.l[l], g.l[l].w, g.l[l].b);
-    // }
+    double cost = mat_add(errors) / len;
+    mat_del(errors);
+    return cost;
 }
 
 // Returns a new neural network filled with zeros.
@@ -251,6 +157,53 @@ void nn_del(NN n) {
     free(n.l);
 }
 
+// Applies the changes to the layer given.
+static void learn(Layer l, Mat gw, Mat gb) {
+    mat_sub(l.w, mat_scalar(gw, LEARNING_RATE));
+    mat_sub(l.b, mat_scalar(gb, LEARNING_RATE));
+}
+
+static activation_function fn_der(ACT_FUNC f) {
+    switch (f) {
+        case RELU:    return relu_der;
+        case TANH:    return tanh_der;
+        case SIGMOID: return sigmoid_der;
+        case LINEAL:  return lineal_der;
+        default: 1;
+    }
+}
+
+// Backpropagation algorithm for neural network learning.
+void backprop(NN n, Mat x, Mat y) {
+    NN g = nn_new_zero(n);
+    size_t len = x.m;
+    for (size_t s = 0; s < len; s++) {
+        Mat inp = mat_col(x, s);
+        Mat out = nn_forward(n, inp);
+        Mat rvs = mat_col(y, s);
+        Mat diff = mat_sub(out, rvs);
+
+        for (int l = n.len-1; l >= 0; l--) {
+            Layer curr = n.l[l];
+            Layer grad = g.l[l];
+            Mat post_delta = mat_mul(diff, mat_func(grad.a, curr.z, fn_der(curr.act_func)));
+            Mat prev_a = l > 0 ? n.l[l-1].a : inp;
+            Mat prev_z = g.l[l-1].z;
+
+            Mat dJdW = mat_dot_sum(grad.w, post_delta, mat_t(prev_a));
+            Mat dJdB = post_delta;
+            mat_sum(grad.b, dJdB);
+
+            if (l > 0) diff = mat_dot(prev_z, mat_t(curr.w), post_delta);
+        }
+    }
+
+    for (size_t l = 0; l < n.len; l++)
+        learn(n.l[l], g.l[l].w, g.l[l].b);
+
+    nn_del(g);
+}
+
 // Trains the network with the given set.
 // Returns the amount of iterations ran.
 size_t nn_fit(NN n, Set set) {
@@ -261,15 +214,12 @@ size_t nn_fit(NN n, Set set) {
 
     size_t iters = 0;
     double c = MIN_ERROR;
-    // NN g = nn_new_zero(n);
 
     do {
-        finite_diff(n, x, y);
-        // backprop(n, g, x, y);
+        backprop(n, x, y);
         printf("%li: cost = %lf\n", iters, c);
-    } while ((c = nn_cost(n, x, y)) > MIN_ERROR && ++iters != MAX_ITER);
+    } while ((c = nn_cost(n, x, y)) > MIN_ERROR && ++iters < MAX_ITER);
 
-    // nn_del(g);
     return iters;
 }
 
@@ -288,11 +238,11 @@ void nn_results(NN n, Set set) {
         Mat x_col = mat_col(x, i);
         Mat y_col = mat_col(y, i);
         Mat pred = nn_forward(n, x_col);
-        mat_print_no_nl(x_col, "x");
+        mat_print_no_nl(x_col, "x:");
         printf("   ");
-        mat_print_no_nl(y_col, "y");
+        mat_print_no_nl(y_col, "y:");
         printf("   ");
-        mat_print_no_nl(pred, "y'");
+        mat_print_no_nl(pred, "y':");
         puts("   ");
     }
 }
@@ -301,10 +251,9 @@ void nn_results(NN n, Set set) {
 void nn_save(NN n, const char *path) {
     FILE *f = fopen(path, "w");
     assert(f != NULL);
-    fwrite(&n.xs, sizeof(size_t), 1, f);
-    fwrite(&n.len, sizeof(size_t), 1, f);
-    for (size_t i = 0; i < n.len; i++)
-        fwrite(&n.l[i].act_func, sizeof(ACT_FUNC), 1, f);
+
+    fwrite(&n.xs, sizeof(n.xs), 1, f);
+    fwrite(&n.len, sizeof(n.len), 1, f);
     for (size_t i = 0; i < n.len; i++)
         lay_save(n.l[i], f);
     fclose(f);
@@ -328,8 +277,8 @@ NN nn_from(const char *path) {
     assert(f != NULL);
 
     size_t xs, len;
-    fread(&xs, sizeof(size_t), 1, f);
-    fread(&len, sizeof(size_t), 1, f);
+    fread(&xs, sizeof(xs), 1, f);
+    fread(&len, sizeof(len), 1, f);
 
     NN n = nn_new_with(xs, len);
     for (size_t i = 0; i < n.len; i++)

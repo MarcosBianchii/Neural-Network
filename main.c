@@ -1,7 +1,7 @@
 #include "nn.h"
 
 int main() {
-    srand(time(NULL));
+    srand(69);
     
     NN n = nn_new(ARCH, ARCH_FUNCS, ARCH_LEN);
     Set s = set_from_csv("binary_sum.csv", ",");
@@ -9,6 +9,7 @@ int main() {
     nn_fit(n, s);
     nn_results(n, s);
 
+    // nn_save(n, "nn.txt");
     nn_del(n);
     set_del(s);
     return 0;

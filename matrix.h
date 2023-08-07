@@ -13,7 +13,7 @@ typedef struct Matrix {
 } Mat;
 
 // Gives an entry point to specific data in the matrix.
-#define MAT_AT(mat, i, j) (mat).data[(i)*(mat).stride+(j)*(mat).step]
+#define MAT_AT(mat, i, j) ((mat).data[(i)*(mat).stride+(j)*(mat).step])
 
 // Returns a sub-matrix with the i'th row of entries.
 // The returned Mat doesn't need to be free'd using mat_del().
@@ -142,6 +142,15 @@ Mat mat_sum(Mat a, Mat b) {
     return a;
 }
 
+// Adds every element of m and returns it's sum.
+double mat_add(Mat m) {
+    double sum = 0;
+    for (size_t i = 0; i < m.n; i++)
+        for (size_t j = 0; j < m.m; j++)
+            sum += MAT_AT(m, i, j);
+    return sum;
+}
+
 // Performs the product between matrix a and scalar v.
 Mat mat_scalar(Mat a, double v) {
     for (size_t i = 0; i < a.n; i++)
@@ -176,11 +185,23 @@ Mat mat_dot(Mat dst, Mat a, Mat b) {
     return dst;
 }
 
+Mat mat_dot_sum(Mat dst, Mat a, Mat b) {
+    assert(a.m == b.n);
+    assert(dst.n == a.n);
+    assert(dst.m == b.m);
+    size_t n = a.m;
+    for (size_t i = 0; i < a.n; i++)
+        for (size_t j = 0; j < b.m; j++)
+            for (size_t k = 0; k < n; k++)
+                MAT_AT(dst, i, j) += MAT_AT(a, i, k) * MAT_AT(b, k, j);
+    return dst;
+}
+
 // Performs the Hadamard product between a and b.
 // The result is then stored in a and returned.
 Mat mat_mul(Mat a, Mat b) {
     assert(a.n == b.n);
-    assert(b.n == b.m);
+    assert(a.m == b.m);
     for (size_t i = 0; i < a.n; i++)
         for (size_t j = 0; j < a.m; j++)
             MAT_AT(a, i, j) *= MAT_AT(b, i, j);
@@ -199,9 +220,20 @@ Mat mat_t(Mat x) {
     };
 }
 
+// Copies matrix b to a and returns it.
+Mat mat_copy(Mat a, Mat b) {
+    assert(a.n == b.n);
+    assert(a.m == b.m);
+    for (size_t i = 0; i < a.n; i++)
+        for (size_t j = 0; j < a.m; j++)
+            MAT_AT(a, i, j) = MAT_AT(b, i, j);
+    return a;
+}
+
 // Applies f to m and stores it's result in n returning it.
 Mat mat_func(Mat n, Mat m, double (*f)(double x)) {
-    if (!f) return n;
+    if (!f) return mat_copy(n, m);
+
     assert(m.n == n.n);
     assert(m.m == n.m);
     for (size_t i = 0; i < n.n; i++)
@@ -212,16 +244,16 @@ Mat mat_func(Mat n, Mat m, double (*f)(double x)) {
 
 // Saves m to a file.
 void mat_save(Mat m, FILE *f) {
-    fwrite(&m.n, sizeof(size_t), 1, f);
-    fwrite(&m.m, sizeof(size_t), 1, f);
+    fwrite(&m.n, sizeof(m.n), 1, f);
+    fwrite(&m.m, sizeof(m.m), 1, f);
     fwrite(m.data, sizeof(double), m.n*m.m, f);
 }
 
 // Loads a matrix from a file.
 Mat mat_from(FILE *f) {
     size_t n, m;
-    fread(&n, sizeof(size_t), 1, f);
-    fread(&m, sizeof(size_t), 1, f);
+    fread(&n, sizeof(n), 1, f);
+    fread(&m, sizeof(m), 1, f);
     Mat r = mat_new(n, m);
     fread(r.data, sizeof(double), n*m, f);
     return r;

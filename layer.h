@@ -8,7 +8,8 @@ double relu(double x);
 double sigmoid(double x);
 double lineal(double x);
 
-double (*funcs[4])(double) = {relu, tanh, sigmoid, lineal};
+typedef double (*activation_function)(double);
+double (*funcs[4])(double) = { relu, tanh, sigmoid, lineal };
 typedef enum ACT_FUNC { RELU, TANH, SIGMOID, LINEAL } ACT_FUNC;
 
 typedef struct Layer {
@@ -59,9 +60,9 @@ Mat lay_biases(Layer l) {
 // Prints the matrices of l.
 void lay_print(Layer l, size_t i) {
     int pad = 4;
-    char wbuff[8];
-    char bbuff[8];
-    char abuff[8];
+    char wbuff[16];
+    char bbuff[16];
+    char abuff[16];
     snprintf(wbuff, sizeof(wbuff), "W%li", i);
     snprintf(bbuff, sizeof(bbuff), "B%li", i);
     snprintf(abuff, sizeof(abuff), i == 0 ? "X" : "A%li", i);
@@ -69,7 +70,6 @@ void lay_print(Layer l, size_t i) {
     printf("%*s%s:%*s", pad, "", wbuff, (int)l.w.m*7+2, "");
     printf("%s:%*s", abuff, 7 - (i == 0 ? 0 : 1) , "");
     printf("%s:\n", bbuff);
-
     for (size_t j = 0; j < l.w.m; j++) {
         printf("%*s", pad, "");
         mat_print_from_layer(l.w, j);
@@ -101,13 +101,13 @@ void lay_save(Layer l, FILE *f) {
 
 // Creates a layer from a file.
 Layer lay_from(FILE *f) {
-    ACT_FUNC act = -1;
+    ACT_FUNC act;
     fread(&act, sizeof(act), 1, f);
     Layer l = (Layer) {
         .w = mat_from(f),
         .b = mat_from(f),
-        .z = mat_new(1, l.b.m),
-        .a = mat_new(1, l.b.m),
+        .z = mat_new(l.b.n, 1),
+        .a = mat_new(l.b.n, 1),
         .act_func = act,
         .act = act == -1 ? NULL : funcs[act],
     };
