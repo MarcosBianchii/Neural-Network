@@ -96,5 +96,5 @@ The following models are available:
 I wanted to learn how neural networks work and how to implement one, it was never meant to be a perfect implementation as it is not optimized for speed nor memory usage.
 
 ## References
-* [Tsoading's Neural Network Series](https://youtube.com/playlist?list=PLpM-Dvs8t0VZPZKggcql-MmjaBdZKeDMw)
+* [Tsoding's Neural Network Series](https://youtube.com/playlist?list=PLpM-Dvs8t0VZPZKggcql-MmjaBdZKeDMw)
 * [3Blue1Brown's Neural Network Series](https://www.youtube.com/watch?v=aircAruvnKk&list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi)
