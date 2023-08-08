@@ -17,7 +17,7 @@ nn.h is a library that implements a neural network in C. It is meant to be used 
 
 ## Example
 ```C
-#include "nn.h"
+#include "nn/nn.h"
 
 int main() {
     // Set seed for generating the random weights and biases.
