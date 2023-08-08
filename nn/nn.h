@@ -245,7 +245,6 @@ void nn_save(NN n, const char *path) {
     FILE *f = fopen(path, "w");
     assert(f != NULL);
 
-    fwrite(&LEARNING_RATE, sizeof(LEARNING_RATE), 1, f);
     fwrite(&n.xs, sizeof(n.xs), 1, f);
     fwrite(&n.len, sizeof(n.len), 1, f);
     for (size_t i = 0; i < n.len; i++)
@@ -271,7 +270,6 @@ NN nn_from(const char *path) {
     assert(f != NULL);
 
     size_t xs, len;
-    fread(&LEARNING_RATE, sizeof(LEARNING_RATE), 1, f);
     fread(&xs, sizeof(xs), 1, f);
     fread(&len, sizeof(len), 1, f);
 
