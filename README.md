@@ -1,8 +1,6 @@
 # nn.h (WIP)
 
-###### needs updating...
-
-This framework is an implementation of a neural network made in C.
+nn.h is a library that implements a neural network in C. It is meant to be used as a learning tool and nothing more. 
 
 * It can accomodate any number of layers and neurons.
 * The framework is designed to be as easy to use as possible.
@@ -10,13 +8,12 @@ This framework is an implementation of a neural network made in C.
 
 ## Usage
 ```bash
-# Compile and run
-$ ./build.sh
+# Compile library to object files.
+./nn/compile.sh
 
-# Run
-$ ./main 
+# Build and run project.
+./build.sh
 ```
-The user of the framework only needs to specify the architecture of the neural network and the activation functions for each layer. The framework will take care of managing the matrix operations and training the neural network.
 
 ## Example
 ```C
@@ -41,9 +38,6 @@ int main() {
     // Print the neural network and test it's predictions.
     nn_results(n, s);
 
-    // Save the nn's parameters in a file.
-    nn_save(n, "nn.txt");
-
     // Free memory.
     nn_del(n);
     set_del(s);
@@ -62,19 +56,17 @@ The following activation functions are available:
 
 ```C
 // When defining the architecture make sure to use
-// this enum type and not the function pointers.
 enum ACT_FUNC { RELU, TANH, SIGMOID, LINEAL };
 ```
-
 
 ## Configuration
 The neural network can be configured in `nn.h` by changing the following variables:
 
 ```C
 // Neural network architecture.
-size_t ARCH[] = {4, 5, 5, 3};
+size_t ARCH[] = { 4, 5, 5, 3 };
 // Activation functions per layer (always 1 less than architecture).
-ACT_FUNC ARCH_FUNCS[] = {TANH, TANH, SIGMOID};
+ACT_FUNC ARCH_FUNCS[] = { TANH, TANH, SIGMOID };
 // Length of ARCH array.
 size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
 ```
@@ -87,3 +79,20 @@ size_t MAX_ITER = 10e+4;
 // Minimum error for the neural network to stop training.
 double MIN_ERROR = 10e-5;
 ```
+
+## Models
+The following models are available:
+
+* `twice.nn`: Single neuron perceptron that doubles the input.
+![twice](images/twice.png)
+* `xor.nn`: Multi-layer perceptron that acts as an XOR gate.
+![xor](images/xor.png)
+* `binary_sum.nn`: Deep neural network that adds two 2 bit binary numbers.
+![binary_sum](images/binary_sum.png)
+
+## Motivation
+I wanted to learn how neural networks work and how to implement one, it was never meant to be a perfect implementation as it is not optimized for speed nor memory usage.
+
+## References
+* [Tsoading's Neural Network Series](https://youtube.com/playlist?list=PLpM-Dvs8t0VZPZKggcql-MmjaBdZKeDMw)
+* [3Blue1Brown's Neural Network Series](https://www.youtube.com/watch?v=aircAruvnKk&list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi)

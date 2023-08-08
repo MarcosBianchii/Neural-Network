@@ -9,7 +9,6 @@ int main() {
     nn_fit(n, s);
     nn_results(n, s);
 
-    nn_save(n, "models/binary_sum.nn");
     nn_del(n);
     set_del(s);
     return 0;

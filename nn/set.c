@@ -49,7 +49,12 @@ Set set_from_csv(const char *csv, const char *sep) {
     Set s = set_new(n, m);
     rewind(f);
     for (size_t i = 0; i < n; i++) {
-        fscanf(f, "%s", buffer);
+        if (fscanf(f, "%s", buffer) != 1) {
+            perror("Error reading CSV file\n");
+            set_del(s);
+            exit(1);
+        }
+
         char *token = strtok(buffer, sep);
         for (size_t j = 0; j < m; j++) {
             SET_AT(s, i, j) = atof(token);

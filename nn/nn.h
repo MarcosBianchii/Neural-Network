@@ -112,9 +112,9 @@ Mat static forward(NN n, Mat x) {
     return forward_rec(n.l, x, n.len, 0);
 }
 
-// Returns the Matrix of predicted values given the set.
-Mat nn_forward(NN n, Set set) {
-    return forward(n, mat_t(set_to_mat(set_get_x(set, n.xs))));
+// Returns the Matrix of predicted values given x.
+Mat nn_forward(NN n, Set x) {
+    return forward(n, mat_t(set_to_mat(x)));
 }
 
 // Calculates the cost for the current state
@@ -219,7 +219,9 @@ size_t nn_fit(NN n, Set set) {
 // Prints the results of the nn
 // compared to the given set.
 void nn_results(NN n, Set set) {
-    system("clear");
+    if (system("clear") == -1)
+        return;
+    
     nn_print(n);
     Mat x = set_to_mat(set_get_x(set, n.xs));
     Mat y = set_to_mat(set_get_y(set, n.xs));
@@ -245,8 +247,15 @@ void nn_save(NN n, const char *path) {
     FILE *f = fopen(path, "w");
     assert(f != NULL);
 
-    fwrite(&n.xs, sizeof(n.xs), 1, f);
-    fwrite(&n.len, sizeof(n.len), 1, f);
+    size_t read = 0;
+    read += fwrite(&n.xs, sizeof(n.xs), 1, f);
+    read += fwrite(&n.len, sizeof(n.len), 1, f);
+    if (read != 2) {
+        perror("Error saving nn");
+        fclose(f);
+        return;
+    }
+
     for (size_t i = 0; i < n.len; i++)
         lay_save(n.l[i], f);
     fclose(f);
@@ -269,9 +278,10 @@ NN nn_from(const char *path) {
     FILE *f = fopen(path, "r");
     assert(f != NULL);
 
-    size_t xs, len;
-    fread(&xs, sizeof(xs), 1, f);
-    fread(&len, sizeof(len), 1, f);
+    size_t xs, len, read = 0;
+    read += fread(&xs, sizeof(xs), 1, f);
+    read += fread(&len, sizeof(len), 1, f);
+    assert(read == 2);
 
     NN n = nn_new_with(xs, len);
     for (size_t i = 0; i < n.len; i++)

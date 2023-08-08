@@ -1,5 +1,6 @@
 #include "layer.h"
 #include "colors.h"
+#include <assert.h>
 
 act_func_t funcs[] = { relu, tanh, sigmoid, lineal };
 
@@ -92,7 +93,10 @@ void lay_fill_zeros(Layer l) {
 
 // Saves the layer to a file.
 void lay_save(Layer l, FILE *f) {
-    fwrite(&l.act_func, sizeof(l.act_func), 1, f);
+    size_t read = 0;
+    read += fwrite(&l.act_func, sizeof(l.act_func), 1, f);
+    assert(read == 1);
+
     mat_save(l.w, f);
     mat_save(l.b, f);
 }
@@ -100,7 +104,14 @@ void lay_save(Layer l, FILE *f) {
 // Creates a layer from a file.
 Layer lay_from(FILE *f) {
     enum ACT_FUNC act;
-    fread(&act, sizeof(act), 1, f);
+    size_t read = 0;
+    read += fread(&act, sizeof(act), 1, f);
+    if (read != 1) {
+        fprintf(stderr, "Error reading layer from file.\n");
+        fclose(f);
+        exit(1);
+    }
+
     Layer l = (Layer) {
         .w = mat_from(f),
         .b = mat_from(f),

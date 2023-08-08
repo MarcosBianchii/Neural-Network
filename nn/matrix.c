@@ -192,18 +192,26 @@ Mat mat_func(Mat n, Mat m, double (*f)(double x)) {
 
 // Saves m to a file.
 void mat_save(Mat m, FILE *f) {
-    fwrite(&m.n, sizeof(m.n), 1, f);
-    fwrite(&m.m, sizeof(m.m), 1, f);
-    fwrite(m.data, sizeof(double), m.n*m.m, f);
+    size_t read = 0;
+    read += fwrite(&m.n, sizeof(m.n), 1, f);
+    read += fwrite(&m.m, sizeof(m.m), 1, f);
+    read += fwrite(m.data, sizeof(double), m.n*m.m, f);
 }
 
 // Loads a matrix from a file.
 Mat mat_from(FILE *f) {
-    size_t n, m;
-    fread(&n, sizeof(n), 1, f);
-    fread(&m, sizeof(m), 1, f);
+    size_t n, m, read = 0;
+    read += fread(&n, sizeof(n), 1, f);
+    read += fread(&m, sizeof(m), 1, f);
+    if (read != 2) {
+        perror("Error reading matrix dimensions");
+        fclose(f);
+        exit(1);
+    }
+
     Mat r = mat_new(n, m);
-    fread(r.data, sizeof(double), n*m, f);
+    read = fread(r.data, sizeof(double), n*m, f);
+    assert(read == 1);
     return r;
 }
 
