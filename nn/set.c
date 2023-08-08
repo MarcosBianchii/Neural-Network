@@ -1,57 +1,14 @@
-#ifndef __SET_H__
-#define __SET_H__
+#include "set.h"
+#include "colors.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-
-typedef struct Set {
-    double *data, *free_ptr;
-    size_t n, m, stride;
-} Set;
-
-// Gives an entry point to specific data in the set.
-#define SET_AT(set, i, j) (set).data[(i)*(set).stride+(j)]
-
-// cambiar esto
-void set_print_no_nl(Set s, const char *str) {
-    printf(WHITE"%s: ", str);
-    char buff[16];
-    for (size_t i = 0; i < s.n; i++) {
-        printf(BLACK"[  ");
-        for (size_t j = 0; j < s.m; j++) {
-            double v = SET_AT(s, i, j);
-            snprintf(buff, 6, "%.3lf", absf(v));
-            printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
-        }
-        printf(BLACK"]");
-    }
-    printf(WHITE);
+double static absf(double x) {
+    return x < 0 ? -x : x;
 }
-
-double absf(double v);
-void set_print_with_str(Set s, const char *str, size_t u, size_t v) {
-    assert(u < v);
-    printf(WHITE"%s:\n", str);
-    char buff[16];
-    for (; u < v; u++) {
-        printf(BLACK"[  ");
-        for (size_t j = 0; j < s.m; j++) {
-            double v = SET_AT(s, u, j);
-            snprintf(buff, 6, "%.3lf", absf(v));
-            printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
-        }
-        puts(BLACK"]");
-    }
-    puts(WHITE);
-}
-
-// Formats and prints s.
-#define set_print(s) set_print_with_str(s, #s, 0, (s).n)
-// Formats and prints s from rows i to j.
-#define set_print_win(s, i, j) set_print_with_str(s, #s, i, j)
 
 // Asserts s is a valid set.
 static void set_assert(Set s) {
@@ -69,15 +26,6 @@ static Set set_new(size_t n, size_t m) {
     };
 
     set_assert(s);
-    return s;
-}
-
-// Returns a set made from a C style matrix.
-Set set_from(size_t n, size_t m, double data[n][m]) {
-    Set s = set_new(n, m);
-    for (size_t i = 0; i < n; i++)
-        for (size_t j = 0; j < m; j++)
-            SET_AT(s, i, j) = data[i][j];
     return s;
 }
 
@@ -110,6 +58,15 @@ Set set_from_csv(const char *csv, const char *sep) {
     }
 
     fclose(f);
+    return s;
+}
+
+// Returns a set made from a C style matrix.
+Set set_from(size_t n, size_t m, double data[n][m]) {
+    Set s = set_new(n, m);
+    for (size_t i = 0; i < n; i++)
+        for (size_t j = 0; j < m; j++)
+            SET_AT(s, i, j) = data[i][j];
     return s;
 }
 
@@ -161,9 +118,23 @@ Set set_get_y(Set s, size_t i) {
     };
 }
 
+void set_print_with_str(Set s, const char *str, size_t u, size_t v) {
+    assert(u < v);
+    printf(WHITE"%s:\n", str);
+    char buff[16];
+    while (u++ < v) {
+        printf(BLACK"[  ");
+        for (size_t j = 0; j < s.m; j++) {
+            double v = SET_AT(s, u, j);
+            snprintf(buff, 6, "%.3lf", absf(v));
+            printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
+        }
+        puts(BLACK"]");
+    }
+    puts(WHITE);
+}
+
 // Frees s.
 void set_del(Set s) {
     free(s.free_ptr);
 }
-
-#endif // __SET_H__

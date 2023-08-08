@@ -1,5 +1,7 @@
 # nn.h (WIP)
 
+###### needs updating...
+
 This framework is an implementation of a neural network made in C.
 
 * It can accomodate any number of layers and neurons.

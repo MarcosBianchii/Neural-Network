@@ -1,22 +1,19 @@
-#ifndef __LAYER_H__
-#define __LAYER_H__
+#include "layer.h"
+#include "colors.h"
 
-#include "matrix.h"
-#include <string.h>
-
-double relu(double x);
-double sigmoid(double x);
-double lineal(double x);
-
-typedef double (*act_func_t)(double);
 act_func_t funcs[] = { relu, tanh, sigmoid, lineal };
-enum ACT_FUNC { RELU, TANH, SIGMOID, LINEAL };
 
-typedef struct Layer {
-    Mat w, b, a, z;
-    enum ACT_FUNC act_func;
-    double (*act)(double);
-} Layer;
+double sigmoid(double x) {
+    return 1 / (1 + exp(-x));
+}
+
+double relu(double x) {
+    return x > 0 ? x : 0;
+}
+
+double lineal(double x) {
+    return x;
+}
 
 // Asserts that every matrix
 // in l is valid.
@@ -42,19 +39,24 @@ Layer lay_new(size_t len, size_t input_size, enum ACT_FUNC act_func) {
     return l;
 }
 
+// Returns a copy of l with every
+// matrix filled with zeros.
+Layer lay_new_zero(Layer l) {
+    return (Layer) {
+        .w = mat_new(l.w.n, l.w.m),
+        .b = mat_new(l.b.n, l.b.m),
+        .z = mat_new(l.z.n, l.z.m),
+        .a = mat_new(l.a.n, l.a.m),
+        .act_func = l.act_func,
+        .act = l.act,
+    };
+}
+
 // Calculates the sum of the product of weights
 // applying the activation function.
 Mat lay_forward(Layer l, Mat x) {
     mat_sum(mat_dot(l.z, l.w, x), l.b);
     return mat_func(l.a, l.z, l.act);
-}
-
-Mat lay_weights(Layer l) {
-    return l.w;
-}
-
-Mat lay_biases(Layer l) {
-    return l.b;
 }
 
 // Prints the matrices of l.
@@ -81,17 +83,6 @@ void lay_print(Layer l, size_t i) {
     puts("");
 }
 
-Layer lay_new_zero(Layer l) {
-    return (Layer) {
-        .w = mat_new(l.w.n, l.w.m),
-        .b = mat_new(l.b.n, l.b.m),
-        .z = mat_new(l.z.n, l.z.m),
-        .a = mat_new(l.a.n, l.a.m),
-        .act_func = l.act_func,
-        .act = l.act,
-    };
-}
-
 void lay_fill_zeros(Layer l) {
     mat_fill(l.w, 0);
     mat_fill(l.b, 0);
@@ -116,7 +107,7 @@ Layer lay_from(FILE *f) {
         .z = mat_new(l.b.n, 1),
         .a = mat_new(l.b.n, 1),
         .act_func = act,
-        .act = act == -1 ? NULL : funcs[act],
+        .act = funcs[act],
     };
 
     return l;
@@ -129,5 +120,3 @@ void lay_del(Layer l) {
     mat_del(l.z);
     mat_del(l.a);
 }
-
-#endif // __LAYER_H__
