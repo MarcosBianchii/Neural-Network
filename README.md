@@ -83,11 +83,13 @@ double MIN_ERROR = 10e-5;
 ## Models
 The following models are available:
 
-* `twice.nn`: Single neuron perceptron that doubles the input.
-![twice](images/twice.png)
-* `xor.nn`: Multi-layer perceptron that acts as an XOR gate.
-![xor](images/xor.png)
-* `binary_sum.nn`: Deep neural network that adds two 2 bit binary numbers.
+* `twice.nn`: Single neuron perceptron that doubles the input.  
+![twice](images/twice.png)  
+
+* `xor.nn`: Multi-layer perceptron that acts as an XOR gate.  
+![xor](images/xor.png)  
+
+* `binary_sum.nn`: Deep neural network that adds two 2 bit binary numbers.  
 ![binary_sum](images/binary_sum.png)
 
 ## Motivation
