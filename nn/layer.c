@@ -1,6 +1,7 @@
 #include "layer.h"
 #include "colors.h"
 #include <assert.h>
+#include <string.h>
 
 act_func_t funcs[] = { relu, tanh, sigmoid, lineal };
 
@@ -61,7 +62,7 @@ Mat lay_forward(Layer l, Mat x) {
 }
 
 // Prints the matrices of l.
-void lay_print(Layer l, size_t i) {
+void lay_print(Layer l, size_t i, size_t prev_size) {
     int pad = 4;
     char wbuff[16];
     char bbuff[16];
@@ -73,10 +74,14 @@ void lay_print(Layer l, size_t i) {
     printf("%*s%s:%*s", pad, "", wbuff, (int)l.w.m*7+2, "");
     printf("%s:%*s", abuff, 7 - (i == 0 ? 0 : 1) , "");
     printf("%s:\n", bbuff);
-    for (size_t j = 0; j < l.w.m; j++) {
+    size_t len = l.w.n > l.w.m ? l.w.n : l.w.m;
+    for (size_t j = 0; j < len; j++) {
         printf("%*s", pad, "");
         mat_print_from_layer(l.w, j);
-        printf(BLACK" ["WHITE"  %s%li  "BLACK"] "WHITE, i == 0 ? "x" : "a", j);
+        if (j < prev_size) 
+            printf(BLACK" ["WHITE"  %s%li  "BLACK"] "WHITE, i == 0 ? "x" : "a", j);
+        else printf("%*s", (int)strlen(" [  xn  ] "), "");
+
         mat_print_from_layer(l.b, j);
         puts("");
     }

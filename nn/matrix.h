@@ -32,7 +32,7 @@ void mat_save(Mat m, FILE *f);
 Mat mat_from(FILE *f);
 void mat_del(Mat m);
 
-void static mat_print_with_str(Mat m, const char *str, int pad);
+void mat_print_with_str(Mat m, const char *str, int pad);
 void mat_print_no_nl(Mat m, const char *str);
 void mat_print_from_layer(Mat m, size_t i);
 

@@ -211,7 +211,7 @@ Mat mat_from(FILE *f) {
 
     Mat r = mat_new(n, m);
     read = fread(r.data, sizeof(double), n*m, f);
-    assert(read == 1);
+    assert(read == n*m);
     return r;
 }
 
@@ -221,7 +221,7 @@ void mat_del(Mat m) {
 }
 
 // Prints m with name and padding.
-void static mat_print_with_str(Mat m, const char *str, int pad) {
+void mat_print_with_str(Mat m, const char *str, int pad) {
     printf(WHITE"%*s%s", pad, "", str);
     char buff[16];
     for (size_t i = 0; i < m.n; i++) {

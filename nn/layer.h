@@ -21,7 +21,7 @@ void lay_assert(Layer l);
 Layer lay_new(size_t len, size_t input_size, enum ACT_FUNC act_func);
 Layer lay_new_zero(Layer l);
 Mat lay_forward(Layer l, Mat x);
-void lay_print(Layer l, size_t i);
+void lay_print(Layer l, size_t i, size_t prev_size);
 void lay_fill_zeros(Layer l);
 void lay_save(Layer l, FILE *f);
 Layer lay_from(FILE *f);

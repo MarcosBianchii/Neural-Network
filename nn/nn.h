@@ -8,7 +8,7 @@
 
 // Architecture of the neural network.
 size_t ARCH[] = { 4, 5, 5, 3 };
-enum ACT_FUNC ARCH_FUNCS[] = { TANH, TANH, SIGMOID };
+enum ACT_FUNC ARCH_FUNCS[] = { TANH, TANH, SIGMOID  };
 size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
 
 // Hyperparameters.
@@ -98,7 +98,7 @@ void nn_del(NN n) {
 void nn_print(NN n) {
     puts("Neural Network:");
     for (size_t i = 0; i < n.len; i++)
-        lay_print(n.l[i], i);
+        lay_print(n.l[i], i, n.l[i].w.m);
 }
 
 // Forwards the input values through the network.
@@ -165,7 +165,7 @@ void static nn_fill_zeros(NN n) {
 }
 
 // Backpropagation algorithm for neural network learning.
-void static backpropagate(NN n, NN g, Mat x, Mat y) {
+void static backpropagation(NN n, NN g, Mat x, Mat y) {
     nn_fill_zeros(g);
     size_t len = x.m;
     for (size_t s = 0; s < len; s++) {
@@ -181,9 +181,10 @@ void static backpropagate(NN n, NN g, Mat x, Mat y) {
             Mat prev_a = l > 0 ? n.l[l-1].a : inp;
             Mat prev_z = l > 0 ? g.l[l-1].z : inp;
 
-            Mat dJdW = mat_dot_sum(grad.w, post_delta, mat_t(prev_a));
-            Mat dJdB = post_delta;
-            mat_sum(grad.b, dJdB);
+            // dJdW
+            mat_dot_sum(grad.w, post_delta, mat_t(prev_a));
+            // dJdB
+            mat_sum(grad.b, post_delta);
 
             if (l > 0) diff = mat_dot(prev_z, mat_t(curr.w), post_delta);
         }
@@ -208,7 +209,7 @@ size_t nn_fit(NN n, Set set) {
     NN g = nn_new_zero(n);
 
     do {
-        backpropagate(n, g, x, y);
+        backpropagation(n, g, x, y);
         printf("%li: cost = %lf\n", iters, c);
     } while ((c = cost(n, x, y)) > MIN_ERROR && ++iters < MAX_ITER);
 
