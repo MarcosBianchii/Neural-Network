@@ -69,7 +69,7 @@ void lay_print(Layer l, size_t i, size_t prev_size) {
     char abuff[16];
     snprintf(wbuff, sizeof(wbuff), "W%li", i);
     snprintf(bbuff, sizeof(bbuff), "B%li", i);
-    snprintf(abuff, sizeof(abuff), i == 0 ? "X" : "A%li", i);
+    snprintf(abuff, sizeof(abuff), i == 0 ? "X" : "A%li", i-1);
 
     printf("%*s%s:%*s", pad, "", wbuff, (int)l.w.m*7+2, "");
     printf("%s:%*s", abuff, 7 - (i == 0 ? 0 : 1) , "");
