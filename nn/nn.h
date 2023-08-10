@@ -253,6 +253,83 @@ void nn_results(NN n, Set set) {
     }
 }
 
+// Calculates the confusion matrix of the nn.
+void static confusion_matrix(NN n, Set s, size_t TP[], size_t FP[], size_t TN[], size_t FN[]) {
+    size_t total = s.n;
+    size_t classes = s.m;
+    for (size_t i = 0; i < total; i++) {
+        Mat x = mat_t(set_to_mat(set_get_x(s, i)));
+        Mat y = mat_t(set_to_mat(set_get_y(s, i)));
+        Mat pred = forward(n, x);
+        size_t pred_i = mat_argmax(pred);
+        size_t y_i = mat_argmax(y);
+        if (pred_i == y_i) {
+            TP[pred_i]++;
+            for (size_t j = 0; j < classes; j++)
+                if (j != pred_i) TN[j]++;
+        }
+
+        else {
+            FP[pred_i]++;
+            FN[y_i]++;
+            for (size_t j = 0; j < classes; j++)
+                if (j != pred_i && j != y_i) TN[j]++;
+        }
+    }
+}
+
+// Returns the AUC_ROC scoring of the nn.
+double nn_auc(NN n, Set s) {
+
+}
+
+// Returns the accuracy of the nn.
+double nn_accuracy(NN n, Set s) {
+    size_t total = s.n;
+    size_t correct = 0;
+    for (size_t i = 0; i < total; i++) {
+        Mat x = mat_t(set_to_mat(set_get_x(s, i)));
+        Mat y = mat_t(set_to_mat(set_get_y(s, i)));
+        Mat pred = forward(n, x);
+        if (mat_argmax(pred) == mat_argmax(y))
+            correct++;
+    }
+
+    return correct / total;
+}
+
+// Returns the precision of the nn.
+double nn_precision(NN n, Set s) {
+    size_t classes = s.n;
+    size_t TP[classes];
+    size_t FP[classes];
+    size_t TN[classes];
+    size_t FN[classes];
+    memset(TP, 0, 4*sizeof(TP));
+    confusion_matrix(n, s, TP, FP, TN, FN);
+
+    double precision = 0;
+    for (size_t i = 0; i < classes; i++)
+        precision += TP[i] / (TP[i] + FP[i]);
+    return precision / classes;
+}
+
+// Returns the recall of the nn.
+double nn_recall(NN n, Set s, double threshold) {
+    size_t classes = s.n;
+    size_t TP[classes];
+    size_t FP[classes];
+    size_t TN[classes];
+    size_t FN[classes];
+    memset(TP, 0, 4*sizeof(TP));
+    confusion_matrix(n, s, TP, FP, TN, FN);
+
+    double recall = 0;
+    for (size_t i = 0; i < classes; i++)
+        recall += TP[i] / (TP[i] + FN[i]);
+    return recall / classes;
+}
+
 // Saves the nn to a file.
 void nn_save(NN n, const char *path) {
     FILE *f = fopen(path, "w");
