@@ -5,6 +5,7 @@
 #include "set.h"
 #include <assert.h>
 #include <time.h>
+#include <string.h>
 
 // Architecture of the neural network.
 size_t ARCH[] = { 4, 5, 5, 3 };
@@ -24,24 +25,6 @@ typedef struct NeuralNetwork {
 
 double static absf(double x) {
     return x < 0 ? -x : x;
-}
-
-double sigmoid_der(double x) {
-    double s = sigmoid(x);
-    return s * (1 - s);
-}
-
-double relu_der(double x) {
-    return x > 0 ? 1 : 0;
-}
-
-double tanh_der(double x) {
-    double t = tanh(x);
-    return 1 - t * t;
-}
-
-double lineal_der(double x) {
-    return 1;
 }
 
 // Converts the matrix into a Set.
@@ -149,16 +132,6 @@ NN static nn_new_zero(NN n) {
     return g;
 }
 
-act_func_t static fn_der(enum ACT_FUNC f) {
-    switch (f) {
-        case RELU:    return relu_der;
-        case TANH:    return tanh_der;
-        case SIGMOID: return sigmoid_der;
-        case LINEAL:  return lineal_der;
-        default: 1;
-    }
-}
-
 // Fills the matrices with zeros.
 void static nn_fill_zeros(NN n) {
     for (size_t l = 0; l < n.len; l++)
@@ -178,7 +151,7 @@ void static backpropagation(NN n, NN g, Mat x, Mat y) {
         for (int l = n.len-1; l >= 0; l--) {
             Layer curr = n.l[l];
             Layer grad = g.l[l];
-            Mat post_delta = mat_mul(diff, mat_func(grad.a, curr.z, fn_der(curr.act_func)));
+            Mat post_delta = mat_mul(diff, lay_der(curr, grad.a, curr.z)); // mat_func(grad.a, curr.z, fn_der(curr.act_func)));
             Mat prev_a = l > 0 ? n.l[l-1].a : inp;
             Mat prev_z = l > 0 ? g.l[l-1].z : (Mat) {0};
 

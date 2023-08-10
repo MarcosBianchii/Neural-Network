@@ -4,6 +4,7 @@
 #include <string.h>
 
 act_func_t funcs[] = { relu, tanh, sigmoid, lineal };
+act_func_t funcs_der[] = { relu_der, tanh_der, sigmoid_der, lineal_der };
 
 double sigmoid(double x) {
     return 1 / (1 + exp(-x));
@@ -15,6 +16,24 @@ double relu(double x) {
 
 double lineal(double x) {
     return x;
+}
+
+double sigmoid_der(double x) {
+    double s = sigmoid(x);
+    return s * (1 - s);
+}
+
+double relu_der(double x) {
+    return x > 0 ? 1 : 0;
+}
+
+double tanh_der(double x) {
+    double t = tanh(x);
+    return 1 - t * t;
+}
+
+double lineal_der(double x) {
+    return 1;
 }
 
 // Asserts that every matrix
@@ -35,6 +54,7 @@ Layer lay_new(size_t len, size_t input_size, enum ACT_FUNC act_func) {
         .a = mat_new(len, 1),
         .act_func = act_func,
         .act = funcs[act_func],
+        .der = funcs_der[act_func],
     };
 
     lay_assert(l);
@@ -59,6 +79,12 @@ Layer lay_new_zero(Layer l) {
 Mat lay_forward(Layer l, Mat x) {
     mat_sum(mat_dot(l.z, l.w, x), l.b);
     return mat_func(l.a, l.z, l.act);
+}
+
+// Applies the derivative of the activation function
+// to m, storing it in n and returning it.
+Mat lay_der(Layer l, Mat n, Mat m) {
+    return mat_func(n, m, l.der);
 }
 
 // Prints the matrices of l.
@@ -124,6 +150,7 @@ Layer lay_from(FILE *f) {
         .a = mat_new(l.b.n, 1),
         .act_func = act,
         .act = funcs[act],
+        .der = funcs_der[act],
     };
 
     return l;

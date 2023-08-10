@@ -28,8 +28,9 @@ Mat mat_dot_sum(Mat dst, Mat a, Mat b);
 Mat mat_mul(Mat a, Mat b);
 Mat mat_copy(Mat a, Mat b);
 Mat mat_func(Mat n, Mat m, double (*f)(double x));
-void mat_save(Mat m, FILE *f);
 Mat mat_from(FILE *f);
+size_t mat_argmax(Mat m);
+void mat_save(Mat m, FILE *f);
 void mat_del(Mat m);
 
 void mat_print_with_str(Mat m, const char *str, int pad);

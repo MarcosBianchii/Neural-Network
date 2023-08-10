@@ -190,6 +190,21 @@ Mat mat_func(Mat n, Mat m, double (*f)(double x)) {
     return n;
 }
 
+// Returns the index of the highest value in m.
+size_t mat_argmax(Mat m) {
+    size_t max_i = 0;
+    double max = MAT_AT(m, 0, 0);
+    for (size_t i = 1; i < m.n; i++) {
+        double curr = MAT_AT(m, i, 0);
+        if (curr > max) {
+            max = curr;
+            max_i = i;
+        }
+    }
+
+    return max_i;
+}
+
 // Saves m to a file.
 void mat_save(Mat m, FILE *f) {
     size_t read = 0;
