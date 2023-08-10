@@ -99,7 +99,7 @@ Set set_col(Set s, size_t j) {
     };
 }
 
-// Returns a sub-set of cols of s from [0,i].
+// Returns a sub-set of cols of s in the interval [0,i).
 // The returned Set doesn't need to be free'd using set_del().
 Set set_get_x(Set s, size_t i) {
     return (Set) {
@@ -111,7 +111,7 @@ Set set_get_x(Set s, size_t i) {
     };
 }
 
-// Returns a sub-set of cols of s from [i,m].
+// Returns a sub-set of cols of s in the interval [i,m).
 // The returned Set doesn't need to be free'd using set_del().
 Set set_get_y(Set s, size_t i) {
     return (Set) {
@@ -123,14 +123,49 @@ Set set_get_y(Set s, size_t i) {
     };
 }
 
-void set_print_with_str(Set s, const char *str, size_t u, size_t v) {
-    assert(u < v);
+// Returns a sub-set of rows of s in the interval [from,to).
+// The returned Set doesn't need to be free'd using set_del().
+Set set_batch(Set s, size_t from, size_t to) {
+    assert(from <= to);
+    to = to < s.n ? to : s.n;
+    return (Set) {
+        .data = &SET_AT(s, from, 0),
+        .free_ptr = NULL,
+        .n = to - from,
+        .m = s.m,
+        .stride = s.stride,
+    };
+}
+
+// Shuffles the given set and returns it.
+Set set_shuffle(Set s) {
+    for (size_t i = 0; i < s.n; i++) {
+        size_t j = (rand() % (s.n - i)) + i;
+        for (size_t k = 0; k < s.m; k++) {
+            double tmp = SET_AT(s, i, k);
+            SET_AT(s, i, k) = SET_AT(s, j, k);
+            SET_AT(s, j, k) = tmp;
+        }
+    }
+
+    return s;
+}
+
+// Returns a copy of the data of s.
+Set set_copy(Set s) {
+    Set c = set_new(s.n, s.m);
+    memcpy(c.data, s.data, s.n*s.m*sizeof(double));
+    return c;
+}
+
+void set_print_with_str(Set s, const char *str, size_t from, size_t to) {
+    assert(from < to);
     printf(WHITE"%s:\n", str);
     char buff[16];
-    while (u++ < v) {
+    for (size_t i = from; i < to; i++) {
         printf(BLACK"[  ");
         for (size_t j = 0; j < s.m; j++) {
-            double v = SET_AT(s, u, j);
+            double v = SET_AT(s, i, j);
             snprintf(buff, 6, "%.3lf", absf(v));
             printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
         }

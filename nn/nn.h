@@ -8,13 +8,14 @@
 
 // Architecture of the neural network.
 size_t ARCH[] = { 4, 5, 5, 3 };
-enum ACT_FUNC ARCH_FUNCS[] = { TANH, TANH, SIGMOID  };
+enum ACT_FUNC ARCH_FUNCS[] = { TANH, TANH, SIGMOID };
 size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
 
 // Hyperparameters.
 double LEARNING_RATE = 10e-1;
-size_t MAX_ITER = 10e+4;
+size_t MAX_EPOCHS = 10e+4;
 double MIN_ERROR = 10e-5;
+size_t BATCH_SIZE = 10;
 
 typedef struct NeuralNetwork {
     size_t xs, len;
@@ -179,7 +180,7 @@ void static backpropagation(NN n, NN g, Mat x, Mat y) {
             Layer grad = g.l[l];
             Mat post_delta = mat_mul(diff, mat_func(grad.a, curr.z, fn_der(curr.act_func)));
             Mat prev_a = l > 0 ? n.l[l-1].a : inp;
-            Mat prev_z = l > 0 ? g.l[l-1].z : inp;
+            Mat prev_z = l > 0 ? g.l[l-1].z : (Mat) {0};
 
             // dJdW
             mat_dot_sum(grad.w, post_delta, mat_t(prev_a));
@@ -197,24 +198,33 @@ void static backpropagation(NN n, NN g, Mat x, Mat y) {
 }
 
 // Trains the network with the given set.
-// Returns the amount of iterations ran.
+// Returns the amount of epochs ran.
 size_t nn_fit(NN n, Set set) {
     Mat x = set_to_mat(set_get_x(set, n.xs));
     Mat y = set_to_mat(set_get_y(set, n.xs));
     x = mat_t(x);
     y = mat_t(y);
 
-    size_t iters = 0;
+    size_t epochs = 0;
     double c = MIN_ERROR;
     NN g = nn_new_zero(n);
+    Set copy = set_copy(set);
 
-    do {
-        backpropagation(n, g, x, y);
-        printf("%li: cost = %lf\n", iters, c);
-    } while ((c = cost(n, x, y)) > MIN_ERROR && ++iters < MAX_ITER);
+    while ((c = cost(n, x, y)) > MIN_ERROR && epochs++ < MAX_EPOCHS) {
+        Set shuffled = set_shuffle(copy);
+        for (size_t i = 0; i < shuffled.n; i += BATCH_SIZE) {
+            Set batch = set_batch(shuffled, i, i+BATCH_SIZE);
+            Mat x_batch = mat_t(set_to_mat(set_get_x(batch, n.xs)));
+            Mat y_batch = mat_t(set_to_mat(set_get_y(batch, n.xs)));
+            backpropagation(n, g, x_batch, y_batch);
+        }
 
+        printf("%li: cost = %lf\n", epochs, c);
+    }
+
+    set_del(copy);
     nn_del(g);
-    return iters;
+    return epochs;
 }
 
 // Prints the results of the nn
