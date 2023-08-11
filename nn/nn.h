@@ -14,7 +14,7 @@ enum ACT_FUNC ARCH_FUNCS[] = { TANH, TANH, SIGMOID };
 size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
 
 // Hyperparameters.
-double LEARNING_RATE = 10e-2;
+double LEARNING_RATE = 10e-1;
 size_t MAX_EPOCHS = 10e+4;
 double MIN_ERROR = 10e-5;
 size_t BATCH_SIZE = 10;
