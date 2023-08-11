@@ -35,7 +35,7 @@ Set set_from_csv(const char *csv, const char *sep) {
     assert(f != NULL);
 
     size_t n = 0, m = 0;
-    char buffer[1024];
+    char buffer[4096];
     while (fscanf(f, "%s", buffer) == 1) {
         char *token = strtok(buffer, sep);
         while (token != NULL) {

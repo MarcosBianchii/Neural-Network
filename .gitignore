@@ -1,2 +1,4 @@
 main
 nn/*.o
+data/mnist_*
+data/csv_editor.ipynb

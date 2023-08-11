@@ -78,6 +78,8 @@ double LEARNING_RATE = 10e-2;
 size_t MAX_ITER = 10e+4;
 // Minimum error for the neural network to stop training.
 double MIN_ERROR = 10e-5;
+// Batch size for stochastic gradient descent.
+size_t BATCH_SIZE = 10;
 ```
 
 ## Models

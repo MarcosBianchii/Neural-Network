@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <time.h>
 #include <string.h>
+#include <stdbool.h>
 
 // Architecture of the neural network.
 size_t ARCH[] = { 4, 5, 5, 3 };
@@ -13,7 +14,7 @@ enum ACT_FUNC ARCH_FUNCS[] = { TANH, TANH, SIGMOID };
 size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
 
 // Hyperparameters.
-double LEARNING_RATE = 10e-1;
+double LEARNING_RATE = 10e-2;
 size_t MAX_EPOCHS = 10e+4;
 double MIN_ERROR = 10e-5;
 size_t BATCH_SIZE = 10;
@@ -151,7 +152,7 @@ void static backpropagation(NN n, NN g, Mat x, Mat y) {
         for (int l = n.len-1; l >= 0; l--) {
             Layer curr = n.l[l];
             Layer grad = g.l[l];
-            Mat post_delta = mat_mul(diff, lay_der(curr, grad.a, curr.z)); // mat_func(grad.a, curr.z, fn_der(curr.act_func)));
+            Mat post_delta = mat_mul(diff, lay_der(curr, grad.a, curr.z));
             Mat prev_a = l > 0 ? n.l[l-1].a : inp;
             Mat prev_z = l > 0 ? g.l[l-1].z : (Mat) {0};
 
@@ -224,83 +225,6 @@ void nn_results(NN n, Set set) {
         mat_print_no_nl(pred, "y':");
         puts("   ");
     }
-}
-
-// Calculates the confusion matrix of the nn.
-void static confusion_matrix(NN n, Set s, size_t TP[], size_t FP[], size_t TN[], size_t FN[]) {
-    size_t total = s.n;
-    size_t classes = s.m;
-    for (size_t i = 0; i < total; i++) {
-        Mat x = mat_t(set_to_mat(set_get_x(s, i)));
-        Mat y = mat_t(set_to_mat(set_get_y(s, i)));
-        Mat pred = forward(n, x);
-        size_t pred_i = mat_argmax(pred);
-        size_t y_i = mat_argmax(y);
-        if (pred_i == y_i) {
-            TP[pred_i]++;
-            for (size_t j = 0; j < classes; j++)
-                if (j != pred_i) TN[j]++;
-        }
-
-        else {
-            FP[pred_i]++;
-            FN[y_i]++;
-            for (size_t j = 0; j < classes; j++)
-                if (j != pred_i && j != y_i) TN[j]++;
-        }
-    }
-}
-
-// Returns the AUC_ROC scoring of the nn.
-double nn_auc(NN n, Set s) {
-
-}
-
-// Returns the accuracy of the nn.
-double nn_accuracy(NN n, Set s) {
-    size_t total = s.n;
-    size_t correct = 0;
-    for (size_t i = 0; i < total; i++) {
-        Mat x = mat_t(set_to_mat(set_get_x(s, i)));
-        Mat y = mat_t(set_to_mat(set_get_y(s, i)));
-        Mat pred = forward(n, x);
-        if (mat_argmax(pred) == mat_argmax(y))
-            correct++;
-    }
-
-    return correct / total;
-}
-
-// Returns the precision of the nn.
-double nn_precision(NN n, Set s) {
-    size_t classes = s.n;
-    size_t TP[classes];
-    size_t FP[classes];
-    size_t TN[classes];
-    size_t FN[classes];
-    memset(TP, 0, 4*sizeof(TP));
-    confusion_matrix(n, s, TP, FP, TN, FN);
-
-    double precision = 0;
-    for (size_t i = 0; i < classes; i++)
-        precision += TP[i] / (TP[i] + FP[i]);
-    return precision / classes;
-}
-
-// Returns the recall of the nn.
-double nn_recall(NN n, Set s, double threshold) {
-    size_t classes = s.n;
-    size_t TP[classes];
-    size_t FP[classes];
-    size_t TN[classes];
-    size_t FN[classes];
-    memset(TP, 0, 4*sizeof(TP));
-    confusion_matrix(n, s, TP, FP, TN, FN);
-
-    double recall = 0;
-    for (size_t i = 0; i < classes; i++)
-        recall += TP[i] / (TP[i] + FN[i]);
-    return recall / classes;
 }
 
 // Saves the nn to a file.
