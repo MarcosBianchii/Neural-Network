@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-double static absf(double x) {
+double static absd(double x) {
     return x < 0 ? -x : x;
 }
 
@@ -166,7 +166,7 @@ void set_print_with_str(Set s, const char *str, size_t from, size_t to) {
         printf(BLACK"[  ");
         for (size_t j = 0; j < s.m; j++) {
             double v = SET_AT(s, i, j);
-            snprintf(buff, 6, "%.3lf", absf(v));
+            snprintf(buff, 6, "%.3lf", absd(v));
             printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
         }
         puts(BLACK"]");

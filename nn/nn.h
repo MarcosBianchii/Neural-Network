@@ -24,10 +24,6 @@ typedef struct NeuralNetwork {
     Layer *l;
 } NN;
 
-double static absf(double x) {
-    return x < 0 ? -x : x;
-}
-
 // Converts the matrix into a Set.
 Set mat_to_set(Mat m) {
     return (Set) {
@@ -104,7 +100,7 @@ Mat nn_forward(NN n, Set x) {
 
 // Calculates the cost for the current state
 // of the neural network given two sets of data.
-double cost(NN n, Mat x, Mat y) {
+double mse(NN n, Mat x, Mat y) {
     size_t len = x.m;
     Mat errors = mat_new(len, 1);
     for (size_t i = 0; i < len; i++) {
@@ -184,7 +180,7 @@ size_t nn_fit(NN n, Set set) {
     NN g = nn_new_zero(n);
     Set copy = set_copy(set);
 
-    while ((c = cost(n, x, y)) > MIN_ERROR && epochs++ < MAX_EPOCHS) {
+    while ((c = mse(n, x, y)) > MIN_ERROR && epochs++ < MAX_EPOCHS) {
         Set shuffled = set_shuffle(copy);
         for (size_t i = 0; i < shuffled.n; i += BATCH_SIZE) {
             Set batch = set_batch(shuffled, i, i+BATCH_SIZE);
@@ -213,7 +209,7 @@ void nn_results(NN n, Set set) {
     x = mat_t(x);
     y = mat_t(y);
 
-    printf("ERROR:\033[0;33m %lf\n", cost(n, x, y));
+    printf("ERROR:\033[0;33m %lf\n", mse(n, x, y));
     for (size_t i = 0; i < x.m; i++) {
         Mat x_col = mat_col(x, i);
         Mat y_col = mat_col(y, i);
@@ -232,11 +228,11 @@ void nn_save(NN n, const char *path) {
     FILE *f = fopen(path, "w");
     assert(f != NULL);
 
-    size_t read = 0;
-    read += fwrite(&n.xs, sizeof(n.xs), 1, f);
-    read += fwrite(&n.len, sizeof(n.len), 1, f);
-    if (read != 2) {
-        perror("Error saving nn");
+    size_t written = 0;
+    written += fwrite(&n.xs, sizeof(n.xs), 1, f);
+    written += fwrite(&n.len, sizeof(n.len), 1, f);
+    if (written != 2) {
+        fprintf(stderr, "Error saving nn");
         fclose(f);
         return;
     }
@@ -266,7 +262,11 @@ NN nn_from(const char *path) {
     size_t xs, len, read = 0;
     read += fread(&xs, sizeof(xs), 1, f);
     read += fread(&len, sizeof(len), 1, f);
-    assert(read == 2);
+    if (read != 2) {
+        fprintf(stderr, "Error reading nn");
+        fclose(f);
+        exit(1);
+    }
 
     NN n = nn_new_with(xs, len);
     for (size_t i = 0; i < n.len; i++)

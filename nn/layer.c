@@ -3,15 +3,15 @@
 #include <assert.h>
 #include <string.h>
 
-act_func_t funcs[] = { relu, tanh, sigmoid, lineal };
-act_func_t funcs_der[] = { relu_der, tanh_der, sigmoid_der, lineal_der };
+const act_func_t const funcs[] = { relu, tanh, sigmoid, lineal };
+const act_func_t const funcs_der[] = { relu_der, tanh_der, sigmoid_der, lineal_der };
 
 double sigmoid(double x) {
     return 1 / (1 + exp(-x));
 }
 
 double relu(double x) {
-    return x > 0 ? x : 0;
+    return x * (x > 0);
 }
 
 double lineal(double x) {
@@ -24,7 +24,7 @@ double sigmoid_der(double x) {
 }
 
 double relu_der(double x) {
-    return x > 0 ? 1 : 0;
+    return x > 0;
 }
 
 double tanh_der(double x) {
@@ -71,6 +71,7 @@ Layer lay_new_zero(Layer l) {
         .a = mat_new(l.a.n, l.a.m),
         .act_func = l.act_func,
         .act = l.act,
+        .der = l.der,
     };
 }
 
@@ -124,9 +125,13 @@ void lay_fill_zeros(Layer l) {
 
 // Saves the layer to a file.
 void lay_save(Layer l, FILE *f) {
-    size_t read = 0;
-    read += fwrite(&l.act_func, sizeof(l.act_func), 1, f);
-    assert(read == 1);
+    size_t written = 0;
+    written += fwrite(&l.act_func, sizeof(l.act_func), 1, f);
+    if (written != 1) {
+        fprintf(stderr, "Error saving layer to file.\n");
+        fclose(f);
+        exit(1);
+    }
 
     mat_save(l.w, f);
     mat_save(l.b, f);

@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <time.h>
 
-double static absf(double x) {
+double static absd(double x) {
     return x < 0 ? -x : x;
 }
 
@@ -207,10 +207,15 @@ size_t mat_argmax(Mat m) {
 
 // Saves m to a file.
 void mat_save(Mat m, FILE *f) {
-    size_t read = 0;
-    read += fwrite(&m.n, sizeof(m.n), 1, f);
-    read += fwrite(&m.m, sizeof(m.m), 1, f);
-    read += fwrite(m.data, sizeof(double), m.n*m.m, f);
+    size_t written = 0;
+    written += fwrite(&m.n, sizeof(m.n), 1, f);
+    written += fwrite(&m.m, sizeof(m.m), 1, f);
+    written += fwrite(m.data, sizeof(double), m.n*m.m, f);
+    if (written != 3) {
+        fprintf(stderr, "Error saving matrix");
+        fclose(f);
+        exit(1);
+    }
 }
 
 // Loads a matrix from a file.
@@ -219,7 +224,7 @@ Mat mat_from(FILE *f) {
     read += fread(&n, sizeof(n), 1, f);
     read += fread(&m, sizeof(m), 1, f);
     if (read != 2) {
-        perror("Error reading matrix dimensions");
+        fprintf(stderr, "Error reading matrix dimensions");
         fclose(f);
         exit(1);
     }
@@ -243,7 +248,7 @@ void mat_print_with_str(Mat m, const char *str, int pad) {
         printf(BLACK"%*s[  ", pad, "");
         for (size_t j = 0; j < m.m; j++) {
             double v = MAT_AT(m, i, j);
-            snprintf(buff, 6, "%.3lf", absf(v));
+            snprintf(buff, 6, "%.3lf", absd(v));
             printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
         }
         puts(BLACK"]");
@@ -259,7 +264,7 @@ void mat_print_no_nl(Mat m, const char *str) {
         printf(BLACK"[  ");
         for (size_t j = 0; j < m.m; j++) {
             double v = MAT_AT(m, i, j);
-            snprintf(buff, 6, "%.3lf", absf(v));
+            snprintf(buff, 6, "%.3lf", absd(v));
             printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
         }
         printf(BLACK"]");
