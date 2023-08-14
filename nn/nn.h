@@ -88,7 +88,6 @@ Mat static forward_rec(Layer *l, Mat x, size_t n, size_t i) {
     return forward_rec(l, lay_forward(l[i], x), n, i+1);
 }
 
-// Tries to predict y given x.
 Mat static forward(NN n, Mat x) {
     return forward_rec(n.l, x, n.len, 0);
 }
@@ -101,21 +100,22 @@ Mat nn_forward(NN n, Set x) {
 // Calculates the cost for the current state
 // of the neural network given two sets of data.
 double mse(NN n, Mat x, Mat y) {
-    size_t len = x.m;
-    Mat errors = mat_new(len, 1);
+    size_t len = y.m;
+
+    Mat errors;
+    MAT_ON_STACK(errors, len, 1);
+
     for (size_t i = 0; i < len; i++) {
         Mat pred = forward(n, mat_col(x, i));
         Mat diff = mat_sub(pred, mat_col(y, i));
         MAT_AT(errors, i, 0) = mat_add(mat_mul(diff, diff));
     }
 
-    double cost = mat_add(errors) / len;
-    mat_del(errors);
-    return cost;
+    return mat_add(errors) / len;
 }
 
 // Returns a new neural network filled with zeros.
-NN static nn_new_zero(NN n) {
+NN static new_nn_zero(NN n) {
     NN g = (NN) {
         .l = malloc(sizeof(*g.l) * n.len),
         .xs = n.xs,
@@ -130,14 +130,14 @@ NN static nn_new_zero(NN n) {
 }
 
 // Fills the matrices with zeros.
-void static nn_fill_zeros(NN n) {
+void static fill_nn_zeros(NN n) {
     for (size_t l = 0; l < n.len; l++)
         lay_fill_zeros(n.l[l]);
 }
 
 // Backpropagation algorithm for neural network learning.
 void static backpropagation(NN n, NN g, Mat x, Mat y) {
-    nn_fill_zeros(g);
+    fill_nn_zeros(g);
     size_t len = x.m;
     for (size_t s = 0; s < len; s++) {
         Mat inp = mat_col(x, s);
@@ -156,7 +156,6 @@ void static backpropagation(NN n, NN g, Mat x, Mat y) {
             mat_dot_sum(grad.w, post_delta, mat_t(prev_a));
             // dJdB
             mat_sum(grad.b, post_delta);
-
             if (l > 0) diff = mat_dot(prev_z, mat_t(curr.w), post_delta);
         }
     }
@@ -177,10 +176,13 @@ size_t nn_fit(NN n, Set set) {
 
     size_t epochs = 0;
     double c = MIN_ERROR;
-    NN g = nn_new_zero(n);
-    Set copy = set_copy(set);
+    NN g = new_nn_zero(n);
 
-    while ((c = mse(n, x, y)) > MIN_ERROR && epochs++ < MAX_EPOCHS) {
+    Set copy;
+    SET_ON_STACK(copy, set.n, set.m);
+    SET_STACK_COPY(copy, set);
+
+    do {
         Set shuffled = set_shuffle(copy);
         for (size_t i = 0; i < shuffled.n; i += BATCH_SIZE) {
             Set batch = set_batch(shuffled, i, i+BATCH_SIZE);
@@ -190,9 +192,8 @@ size_t nn_fit(NN n, Set set) {
         }
 
         printf("%li: cost = %lf\n", epochs, c);
-    }
+    } while ((c = mse(n, x, y)) > MIN_ERROR && ++epochs < MAX_EPOCHS);
 
-    set_del(copy);
     nn_del(g);
     return epochs;
 }
@@ -219,13 +220,13 @@ void nn_results(NN n, Set set) {
         mat_print_no_nl(y_col, "y:");
         printf("   ");
         mat_print_no_nl(pred, "y':");
-        puts("   ");
+        puts("");
     }
 }
 
 // Saves the nn to a file.
 void nn_save(NN n, const char *path) {
-    FILE *f = fopen(path, "w");
+    FILE *f = fopen(path, "wb");
     assert(f != NULL);
 
     size_t written = 0;
@@ -243,7 +244,7 @@ void nn_save(NN n, const char *path) {
 }
 
 // Returns an empty nn with the given amount of layers.
-NN static nn_new_with(size_t xs, size_t len) {
+NN static new_nn_with(size_t xs, size_t len) {
     NN n = (NN) {
         .xs = xs,
         .len = len,
@@ -256,11 +257,11 @@ NN static nn_new_with(size_t xs, size_t len) {
 
 // Loads a nn from a file.
 NN nn_from(const char *path) {
-    FILE *f = fopen(path, "r");
+    FILE *f = fopen(path, "rb");
     assert(f != NULL);
 
     size_t xs, len, read = 0;
-    read += fread(&xs, sizeof(xs), 1, f);
+    read += fread(&xs,  sizeof(xs),  1, f);
     read += fread(&len, sizeof(len), 1, f);
     if (read != 2) {
         fprintf(stderr, "Error reading nn");
@@ -268,7 +269,7 @@ NN nn_from(const char *path) {
         exit(1);
     }
 
-    NN n = nn_new_with(xs, len);
+    NN n = new_nn_with(xs, len);
     for (size_t i = 0; i < n.len; i++)
         n.l[i] = lay_from(f);
     

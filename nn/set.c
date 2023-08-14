@@ -151,11 +151,15 @@ Set set_shuffle(Set s) {
     return s;
 }
 
-// Returns a copy of the data of s.
-Set set_copy(Set s) {
-    Set c = set_new(s.n, s.m);
-    memcpy(c.data, s.data, s.n*s.m*sizeof(double));
-    return c;
+// Copies src into dst and returns it.
+Set set_copy(Set dst, Set src) {
+    for (size_t i = 0; i < src.n; i++) {
+        for (size_t j = 0; j < src.m; j++) {
+            SET_AT(dst, i, j) = SET_AT(src, i, j);
+        }
+    }
+
+    return dst;
 }
 
 void set_print_with_str(Set s, const char *str, size_t from, size_t to) {
