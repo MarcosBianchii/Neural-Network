@@ -8,17 +8,10 @@
 #include <string.h>
 #include <stdbool.h>
 
-typedef struct NeuralNetwork NN;
-typedef double (*cost_func_t)(NN, Mat, Mat);
-enum COST_FUNC { MSE, MAE };
-
 // Architecture of the neural network.
 size_t ARCH[] = { 4, 5, 5, 3 };
 enum ACT_FUNC ARCH_FUNCS[] = { TANH, TANH, SIGMOID };
 size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
-
-// Cost Function.
-enum COST_FUNC COST = MSE;
 
 // Hyperparameters.
 double LEARNING_RATE = 10e-1;
@@ -26,19 +19,10 @@ size_t MAX_EPOCHS = 10e+4;
 double MIN_ERROR = 10e-5;
 size_t BATCH_SIZE = 10;
 
-double mse(NN, Mat, Mat);
-double mae(NN, Mat, Mat);
-
-cost_func_t COST_FUNC[] = {
-    [MSE] = mse,
-    [MAE] = mae,
-};
-
-struct NeuralNetwork {
-    cost_func_t cost;
+typedef struct NeuralNetwork {
     size_t xs, len;
     Layer *l;
-};
+} NN;
 
 // Converts the matrix into a Set.
 Set mat_to_set(Mat m) {
@@ -71,7 +55,6 @@ NN nn_new(size_t arch[], enum ACT_FUNC *f, size_t len) {
         .l = malloc(sizeof(*n.l) * (len-1)),
         .xs = arch[0],
         .len = len-1,
-        .cost = COST_FUNC[COST],
     };
 
     assert(n.l != NULL);
@@ -151,22 +134,6 @@ double mse(NN n, Mat x, Mat y) {
     return mat_add(errors) / len;
 }
 
-// Calculates the loss of the network
-// using Mean Absolute Error.
-double mae(NN n, Mat x, Mat y) {
-    size_t len = y.m;
-    Mat errors;
-    MAT_ON_STACK(errors, len, 1);
-
-    for (size_t i = 0; i < len; i++) {
-        Mat pred = forward(n, mat_col(x, i));
-        Mat diff = mat_sub(pred, mat_col(y, i));
-        MAT_AT(errors, i, 0) = mat_add(mat_func(diff, diff, fabs));
-    }
-
-    return mat_add(errors) / len;
-}
-
 // Backpropagation algorithm for neural network learning.
 void static backpropagation(NN n, NN g, Mat x, Mat y) {
     fill_nn_zeros(g);
@@ -224,7 +191,7 @@ size_t nn_fit(NN n, Set set) {
         }
 
         printf("%li: cost = %lf\n", epochs, c);
-    } while ((c = n.cost(n, x, y)) > MIN_ERROR && ++epochs < MAX_EPOCHS);
+    } while ((c = mse(n, x, y)) > MIN_ERROR && ++epochs < MAX_EPOCHS);
 
     nn_del(g);
     return epochs;
@@ -242,7 +209,7 @@ void nn_results(NN n, Set set) {
     x = mat_t(x);
     y = mat_t(y);
 
-    printf("ERROR:\033[0;33m %lf\n", n.cost(n, x, y));
+    printf("ERROR:\033[0;33m %lf\n", mse(n, x, y));
     for (size_t i = 0; i < x.m; i++) {
         Mat x_col = mat_col(x, i);
         Mat y_col = mat_col(y, i);
