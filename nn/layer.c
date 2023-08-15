@@ -3,8 +3,19 @@
 #include <assert.h>
 #include <string.h>
 
-const act_func_t const funcs[] = { relu, tanh, sigmoid, lineal };
-const act_func_t const funcs_der[] = { relu_der, tanh_der, sigmoid_der, lineal_der };
+const act_func_t const funcs[] = { 
+    [RELU]    = relu,
+    [TANH]    = tanh,
+    [SIGMOID] = sigmoid,
+    [LINEAL]  = lineal,
+};
+
+const act_func_t const funcs_der[] = {
+    [RELU]    = relu_der,
+    [TANH]    = tanh_der,
+    [SIGMOID] = sigmoid_der,
+    [LINEAL]  = lineal_der,
+};
 
 double sigmoid(double x) {
     return 1 / (1 + exp(-x));

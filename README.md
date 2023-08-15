@@ -1,5 +1,7 @@
 # nn.h (WIP)
 
+###### needs updating...
+
 nn.h is a library that implements a neural network in C. It is meant to be used as a learning tool and nothing more. 
 
 * It can accomodate any number of layers and neurons.

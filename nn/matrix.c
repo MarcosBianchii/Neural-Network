@@ -3,10 +3,7 @@
 
 #include <assert.h>
 #include <time.h>
-
-double static absd(double x) {
-    return x < 0 ? -x : x;
-}
+#include <math.h>
 
 // Generates a random value between [-1,1].
 double randf() {
@@ -248,7 +245,7 @@ void mat_print_with_str(Mat m, const char *str, int pad) {
         printf(BLACK"%*s[  ", pad, "");
         for (size_t j = 0; j < m.m; j++) {
             double v = MAT_AT(m, i, j);
-            snprintf(buff, 6, "%.3lf", absd(v));
+            snprintf(buff, 6, "%.3lf", fabs(v));
             printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
         }
         puts(BLACK"]");
@@ -264,7 +261,7 @@ void mat_print_no_nl(Mat m, const char *str) {
         printf(BLACK"[  ");
         for (size_t j = 0; j < m.m; j++) {
             double v = MAT_AT(m, i, j);
-            snprintf(buff, 6, "%.3lf", absd(v));
+            snprintf(buff, 6, "%.3lf", fabs(v));
             printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
         }
         printf(BLACK"]");

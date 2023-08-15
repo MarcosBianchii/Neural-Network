@@ -5,10 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-double static absd(double x) {
-    return x < 0 ? -x : x;
-}
+#include <math.h>
 
 // Asserts s is a valid set.
 static void set_assert(Set s) {
@@ -170,7 +167,7 @@ void set_print_with_str(Set s, const char *str, size_t from, size_t to) {
         printf(BLACK"[  ");
         for (size_t j = 0; j < s.m; j++) {
             double v = SET_AT(s, i, j);
-            snprintf(buff, 6, "%.3lf", absd(v));
+            snprintf(buff, 6, "%.3lf", fabs(v));
             printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
         }
         puts(BLACK"]");
