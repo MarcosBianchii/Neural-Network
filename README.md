@@ -1,12 +1,13 @@
 # nn.h (WIP)
 
-nn.h is a library that implements a neural network in C. It is meant to be used as a learning tool and nothing more. 
+nn.h is a library that implements a neural network in C. It is meant to be used as a learning tool and nothing more.
 
 * It can accomodate any number of layers and neurons.
 * The framework is designed to be as easy to use as possible.
 * It trains the network using stochastic gradient descent with backpropagation.
 
 ## Usage
+
 ```bash
 # Compile library to object files.
 ./nn/compile.sh
@@ -16,6 +17,7 @@ nn.h is a library that implements a neural network in C. It is meant to be used 
 ```
 
 ## Example
+
 ```C
 #include "nn/nn.h"
 
@@ -47,6 +49,7 @@ int main() {
 ```
 
 ## Activation Functions
+
 The following activation functions are available:
 
 * RELU:    Rectified Linear Unit.
@@ -60,9 +63,11 @@ enum ACT_FUNC { RELU, TANH, SIGMOID, LINEAL };
 ```
 
 ## Configuration
+
 The neural network can be configured in `nn.h` by changing the following variables.
 
 * Architecture of the model:
+  
 ```C
 // Neural network architecture.
 size_t ARCH[] = { 4, 5, 5, 3 };
@@ -73,6 +78,7 @@ size_t ARCH_LEN = sizeof(ARCH) / sizeof(ARCH[0]);
 ```
 
 * Hyperparameters of the model:
+
 ```C
 // Coefficient for the regularization term.
 double LEARNING_RATE = 10e-2;
@@ -85,6 +91,7 @@ size_t BATCH_SIZE = 10;
 ```
 
 ## Models
+
 The following models are available in `models`:
 
 * `twice.nn`: Single neuron perceptron that doubles the input.  
@@ -97,8 +104,10 @@ The following models are available in `models`:
 ![binary_sum](images/binary_sum.png)
 
 ## Motivation
+
 I wanted to learn how neural networks work and how to implement one, it was never meant to be a perfect implementation as it is not optimized for speed nor memory usage.
 
 ## References
+
 * [Tsoding's Neural Network Series](https://youtube.com/playlist?list=PLpM-Dvs8t0VZPZKggcql-MmjaBdZKeDMw)
 * [3Blue1Brown's Neural Network Series](https://www.youtube.com/watch?v=aircAruvnKk&list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi)
