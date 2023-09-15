@@ -1,4 +1,4 @@
-# nn.h (WIP)
+# nn.h
 
 nn.h is a library that implements a neural network in C. It is meant to be used as a learning tool and nothing more.
 

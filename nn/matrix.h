@@ -10,7 +10,7 @@ typedef struct Matrix {
 } Mat;
 
 // Gives an entry point to specific data in the matrix.
-#define MAT_AT(mat, i, j) ((mat).data[(i)*(mat).stride+(j)*(mat).step])
+#define MAT_AT(mat, i, j) ((mat).data[(i)*(mat).stride + (j)*(mat).step])
 
 // Allocates a matrix on the stack.
 #define MAT_ON_STACK(mat, N, M)\
@@ -19,8 +19,9 @@ typedef struct Matrix {
         .data = _data_arr,     \
         .free_ptr = NULL,      \
         .n = (N),              \
-        .m = 1,                \
+        .m = (M),              \
         .step = 1,             \
+        .stride = (M),         \
     };                         \
 
 void mat_assert(Mat m);
@@ -47,8 +48,6 @@ void mat_del(Mat m);
 void mat_print_with_str(Mat m, const char *str, int pad);
 void mat_print_no_nl(Mat m, const char *str);
 void mat_print_from_layer(Mat m, size_t i);
-
-void static fill_rand_data(double data[], size_t n);
 
 // Formats and prints m.
 #define mat_print(m) mat_print_with_str(m, #m":\n", 0)
