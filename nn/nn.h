@@ -144,7 +144,7 @@ void static backpropagation(NN n, NN g, Mat x, Mat y) {
         Mat rvs = mat_col(y, s);
         Mat diff = mat_scalar(mat_sub(out, rvs), 2);
 
-        for (int l = n.len-1; l >= 0; l--) {
+        for (long l = n.len-1; l >= 0; l--) {
             Layer curr = n.l[l];
             Layer grad = g.l[l];
             Mat post_delta = mat_mul(diff, lay_der(curr, grad.a, curr.z));
