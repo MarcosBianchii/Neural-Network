@@ -134,11 +134,18 @@ Mat mat_dot(Mat dst, Mat a, Mat b) {
     assert(a.m == b.n);
     assert(dst.n == a.n);
     assert(dst.m == b.m);
-    mat_fill(dst, 0);
-    for (size_t i = 0; i < a.n; i++)
-        for (size_t j = 0; j < b.m; j++)
-            for (size_t k = 0; k < a.m; k++)
-                MAT_AT(dst, i, j) += MAT_AT(a, i, k) * MAT_AT(b, k, j);    
+    register double sum;
+    for (size_t i = 0; i < a.n; i++) {
+        for (size_t j = 0; j < b.m; j++) {
+            sum = 0;
+            for (size_t k = 0; k < a.m; k++) {
+                sum += MAT_AT(a, i, k) * MAT_AT(b, k, j);    
+            }
+
+            MAT_AT(dst, i, j) = sum;
+        }
+    }
+    
     return dst;
 }
 
@@ -148,10 +155,18 @@ Mat mat_dot_sum(Mat dst, Mat a, Mat b) {
     assert(a.m == b.n);
     assert(dst.n == a.n);
     assert(dst.m == b.m);
-    for (size_t i = 0; i < a.n; i++)
-        for (size_t j = 0; j < b.m; j++)
-            for (size_t k = 0; k < a.m; k++)
-                MAT_AT(dst, i, j) += MAT_AT(a, i, k) * MAT_AT(b, k, j);    
+    register double sum;
+    for (size_t i = 0; i < a.n; i++) {
+        for (size_t j = 0; j < b.m; j++) {
+            sum = 0;
+            for (size_t k = 0; k < a.m; k++) {
+                sum += MAT_AT(a, i, k) * MAT_AT(b, k, j);    
+            }
+            
+            MAT_AT(dst, i, j) += sum;
+        }
+    }
+
     return dst;
 }
 
