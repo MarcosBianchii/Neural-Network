@@ -139,13 +139,13 @@ Mat mat_dot(Mat dst, Mat a, Mat b) {
         for (size_t j = 0; j < b.m; j++) {
             sum = 0;
             for (size_t k = 0; k < a.m; k++) {
-                sum += MAT_AT(a, i, k) * MAT_AT(b, k, j);    
+                sum += MAT_AT(a, i, k) * MAT_AT(b, k, j);
             }
 
             MAT_AT(dst, i, j) = sum;
         }
     }
-    
+
     return dst;
 }
 
