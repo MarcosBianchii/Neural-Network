@@ -4,10 +4,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-void print(void *arg) {
-    printf("%s\n", (char *)arg);
-}
-
 int main() {
     srand(time(NULL));
     
