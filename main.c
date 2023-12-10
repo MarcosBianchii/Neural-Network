@@ -1,5 +1,13 @@
 #include "nn/nn.h"
 
+#include "nn/threadpool.h"
+#include <stdio.h>
+#include <unistd.h>
+
+void print(void *arg) {
+    printf("%s\n", (char *)arg);
+}
+
 int main() {
     srand(time(NULL));
     
@@ -11,5 +19,7 @@ int main() {
 
     nn_del(n);
     set_del(s);
+    return 0;
+
     return 0;
 }
