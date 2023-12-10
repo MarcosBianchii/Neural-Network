@@ -16,6 +16,4 @@ int main() {
     nn_del(n);
     set_del(s);
     return 0;
-
-    return 0;
 }

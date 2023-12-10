@@ -5,32 +5,41 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define MAX_THREADS 128
-#define THREADS_IF_ZERO 3
+// Queue params.
+#define QUEUE_RESIZE_COEF 2
+#define QUEUE_SIZE_INIT 128
 
 typedef void (*Job)(void *);
 typedef struct Queue Queue;
 
-typedef struct Worker {
-    pthread_t handle;
-} Worker;
+typedef struct Task {
+    Job func;
+    void *arg;
+} Task;
+
+typedef struct Queue {
+    Task **vec;
+    size_t len;
+    size_t cap;
+} Queue;
 
 typedef struct ThreadPool {
-    Worker workers[MAX_THREADS];
+    pthread_t *workers;
     pthread_mutex_t running_lock;
-    pthread_mutex_t lock;
-    pthread_cond_t cond;
+    pthread_mutex_t qlock;
+    pthread_cond_t new_task;
+    pthread_cond_t finished;
     size_t running;
     Queue *tasks;
     size_t len;
     bool exit;
 } ThreadPool;
 
-ThreadPool *threadpool_new(size_t n);
-int threadpool_spawn(ThreadPool *pool, Job job, void *arg);
-void threadpool_wait(ThreadPool *pool);
-size_t threadpool_running(ThreadPool *pool);
-size_t threadpool_len(ThreadPool *pool);
-void threadpool_del(ThreadPool *pool);
+ThreadPool *thpool_new(size_t nthreads);
+int thpool_spawn(ThreadPool *pool, Job job, void *arg);
+void thpool_wait(ThreadPool *pool);
+size_t thpool_running(ThreadPool *pool);
+size_t thpool_len(ThreadPool *pool);
+void thpool_del(ThreadPool *pool);
 
 #endif // __THREADPOOL__
