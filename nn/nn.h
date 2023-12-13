@@ -3,6 +3,7 @@
 
 #include "layer.h"
 #include "set.h"
+#include "matrix.h"
 #include <assert.h>
 #include <time.h>
 #include <string.h>

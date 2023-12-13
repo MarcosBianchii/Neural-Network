@@ -6,12 +6,12 @@
 #include <math.h>
 
 // Generates a random value between [-1,1].
-double randf() {
-    return (double)rand() / (double)RAND_MAX * 2 - 1;
+MAT_TYPE randf() {
+    return (MAT_TYPE)rand() / (MAT_TYPE)RAND_MAX * 2 - 1;
 }
 
 // Fills a data array with random values.
-void static fill_rand_data(double data[], size_t n) {
+void static fill_rand_data(MAT_TYPE data[], size_t n) {
     for (size_t i = 0; i < n; i++)
         data[i] = randf();
 }
@@ -24,7 +24,7 @@ void mat_assert(Mat m) {
 // Returns an empty matrix.
 Mat mat_new(size_t n, size_t m) {
     Mat r = {
-        .data = calloc(n*m, sizeof(double)),
+        .data = calloc(n * m, sizeof(MAT_TYPE)),
         .free_ptr = r.data,
         .n = n,
         .m = m,
@@ -47,7 +47,7 @@ Mat mat_rand_new(size_t n, size_t m) {
 Mat mat_fill(Mat m, double v) {
     for (size_t i = 0; i < m.n; i++)
         for (size_t j = 0; j < m.m; j++)
-            MAT_AT(m, i, j) = v;
+            MAT_AT(m, i, j) = (MAT_TYPE) v;
     return m;
 }
 
@@ -90,18 +90,18 @@ Mat mat_sum(Mat a, Mat b) {
 
 // Adds every element of m and returns it's sum.
 double mat_add(Mat m) {
-    double sum = 0;
+    MAT_TYPE sum = 0;
     for (size_t i = 0; i < m.n; i++)
         for (size_t j = 0; j < m.m; j++)
             sum += MAT_AT(m, i, j);
-    return sum;
+    return (double) sum;
 }
 
 // Performs the product between matrix a and scalar v.
 Mat mat_scalar(Mat a, double v) {
     for (size_t i = 0; i < a.n; i++)
         for (size_t j = 0; j < a.m; j++)
-            MAT_AT(a, i, j) *= v;
+            MAT_AT(a, i, j) *= (MAT_TYPE) v;
     return a;
 }
 
@@ -128,13 +128,44 @@ Mat mat_t(Mat x) {
     };
 }
 
+static Mat mat_dot_optimized(Mat dst, Mat a, Mat b) {
+    Mat bt = mat_new(b.m, b.n);
+    mat_assert(bt);
+
+    for (size_t i = 0; i < b.n; i++) {
+        for (size_t j = 0; j < b.m; j++) {
+            MAT_AT(bt, j, i) = MAT_AT(bt, i, j);
+        }
+    }
+
+    register MAT_TYPE sum;
+    for (size_t i = 0; i < a.n; i++) {
+        for (size_t j = 0; j < bt.n; j++) {
+            sum = 0;
+            for (size_t k = 0; k < a.m; k++) {
+                sum += MAT_AT(a, i, k) * MAT_AT(bt, j, k);
+            }
+
+            MAT_AT(dst, i, j) = sum;
+        }
+    }
+
+    mat_del(bt);
+    return dst;
+}
+
 // Performs the product between matrices a and b.
 // The result is then stored in dst and returned.
 Mat mat_dot(Mat dst, Mat a, Mat b) {
     assert(a.m == b.n);
     assert(dst.n == a.n);
     assert(dst.m == b.m);
-    register double sum;
+
+    if (dst.n > 100 && dst.m > 100) {
+        return mat_dot_optimized(dst, a, b);
+    }
+
+    register MAT_TYPE sum;
     for (size_t i = 0; i < a.n; i++) {
         for (size_t j = 0; j < b.m; j++) {
             sum = 0;
@@ -149,13 +180,44 @@ Mat mat_dot(Mat dst, Mat a, Mat b) {
     return dst;
 }
 
+static Mat mat_dot_sum_optimized(Mat dst, Mat a, Mat b) {
+    Mat bt = mat_new(b.m, b.n);
+    mat_assert(bt);
+
+    for (size_t i = 0; i < b.n; i++) {
+        for (size_t j = 0; j < b.m; j++) {
+            MAT_AT(bt, j, i) = MAT_AT(bt, i, j);
+        }
+    }
+
+    register MAT_TYPE sum;
+    for (size_t i = 0; i < a.n; i++) {
+        for (size_t j = 0; j < bt.n; j++) {
+            sum = 0;
+            for (size_t k = 0; k < a.m; k++) {
+                sum += MAT_AT(a, i, k) * MAT_AT(bt, j, k);
+            }
+
+            MAT_AT(dst, i, j) += sum;
+        }
+    }
+
+    mat_del(bt);
+    return dst;
+}
+
 // Performs the product between matrices a and b.
 // The result is summed to dst and returned.
 Mat mat_dot_sum(Mat dst, Mat a, Mat b) {
     assert(a.m == b.n);
     assert(dst.n == a.n);
     assert(dst.m == b.m);
-    register double sum;
+
+    if (dst.n > 100 && dst.m > 100) {
+        return mat_dot_sum_optimized(dst, a, b);
+    }
+
+    register MAT_TYPE sum;
     for (size_t i = 0; i < a.n; i++) {
         for (size_t j = 0; j < b.m; j++) {
             sum = 0;
@@ -205,9 +267,9 @@ Mat mat_func(Mat n, Mat m, double (*f)(double x)) {
 // Returns the index of the highest value in m.
 size_t mat_argmax(Mat m) {
     size_t max_i = 0;
-    double max = MAT_AT(m, 0, 0);
+    MAT_TYPE max = MAT_AT(m, 0, 0);
     for (size_t i = 1; i < m.n; i++) {
-        double curr = MAT_AT(m, i, 0);
+        MAT_TYPE curr = MAT_AT(m, i, 0);
         if (curr > max) {
             max = curr;
             max_i = i;
@@ -222,7 +284,7 @@ void mat_save(Mat m, FILE *f) {
     size_t written = 0;
     written += fwrite(&m.n, sizeof(m.n), 1, f);
     written += fwrite(&m.m, sizeof(m.m), 1, f);
-    written += fwrite(m.data, sizeof(double), m.n*m.m, f);
+    written += fwrite(m.data, sizeof(MAT_TYPE), m.n * m.m, f);
     if (written != 3) {
         fprintf(stderr, "Error saving matrix");
         fclose(f);
@@ -242,8 +304,8 @@ Mat mat_from(FILE *f) {
     }
 
     Mat r = mat_new(n, m);
-    read = fread(r.data, sizeof(double), n*m, f);
-    assert(read == n*m);
+    read = fread(r.data, sizeof(MAT_TYPE), n * m, f);
+    assert(read == n * m);
     return r;
 }
 
@@ -259,7 +321,7 @@ void mat_print_with_str(Mat m, const char *str, int pad) {
     for (size_t i = 0; i < m.n; i++) {
         printf(BLACK"%*s[  ", pad, "");
         for (size_t j = 0; j < m.m; j++) {
-            double v = MAT_AT(m, i, j);
+            MAT_TYPE v = MAT_AT(m, i, j);
             snprintf(buff, 6, "%.3lf", fabs(v));
             printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
         }
@@ -275,7 +337,7 @@ void mat_print_no_nl(Mat m, const char *str) {
     for (size_t i = 0; i < m.n; i++) {
         printf(BLACK"[  ");
         for (size_t j = 0; j < m.m; j++) {
-            double v = MAT_AT(m, i, j);
+            MAT_TYPE v = MAT_AT(m, i, j);
             snprintf(buff, 6, "%.3lf", fabs(v));
             printf(v < 0 ? RED"%s  " : (v == 0 ? WHITE"%s  " : GREEN"%s  "), buff);
         }
@@ -287,7 +349,7 @@ void mat_print_no_nl(Mat m, const char *str) {
 // Prints a certain row of matrix m.
 void mat_print_from_layer(Mat m, size_t i) {
     if (m.n <= i) {
-        printf("%*s", (int)m.m*7+4, "");
+        printf("%*s", (int) m.m * 7 + 4, "");
         return;
     }
 

@@ -1,9 +1,5 @@
 #include "nn/nn.h"
 
-#include "nn/threadpool.h"
-#include <stdio.h>
-#include <unistd.h>
-
 int main() {
     srand(time(NULL));
     

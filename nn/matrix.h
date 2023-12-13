@@ -4,8 +4,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define MAT_TYPE float
+
 typedef struct Matrix {
-    double *data, *free_ptr;
+    MAT_TYPE *data, *free_ptr;
     size_t n, m, step, stride;
 } Mat;
 
@@ -14,7 +16,7 @@ typedef struct Matrix {
 
 // Allocates a matrix on the stack.
 #define MAT_ON_STACK(mat, N, M)\
-    double _data_arr[(N)*(M)]; \
+    MAT_TYPE _data_arr[(N)*(M)]; \
     (mat) = (Mat) {            \
         .data = _data_arr,     \
         .free_ptr = NULL,      \

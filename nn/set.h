@@ -1,10 +1,11 @@
 #ifndef __SET_H__
 #define __SET_H__
 
+#include "matrix.h"
 #include <stdlib.h>
 
 typedef struct Set {
-    double *data, *free_ptr;
+    MAT_TYPE *data, *free_ptr;
     size_t n, m, stride;
 } Set;
 
@@ -16,7 +17,7 @@ typedef struct Set {
 
 // Allocates a set on the stack.
 #define SET_ON_STACK(set, N, M)\
-    double _data_arr[(N)*(M)]; \
+    MAT_TYPE _data_arr[(N)*(M)]; \
     (set) = (Set) {            \
         .data = _data_arr,     \
         .free_ptr = NULL,      \
