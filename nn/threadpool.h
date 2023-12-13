@@ -25,8 +25,7 @@ typedef struct Queue {
 
 typedef struct ThreadPool {
     pthread_t *workers;
-    pthread_mutex_t running_lock;
-    pthread_mutex_t qlock;
+    pthread_mutex_t work_lock;
     pthread_cond_t new_task;
     pthread_cond_t finished;
     size_t running;
